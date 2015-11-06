@@ -46,7 +46,7 @@ def main():
 	HISTORY:
 		03/11/2015 Started CS
 	"""
-	me = "Efficacy: "
+	me = "Efficacy.main: "
 	t0 = sysT()
 	
 	## CLA check
@@ -113,7 +113,6 @@ def main():
 	Delta = Delta[sortind]
 	Cordi = Cordi[sortind]
 	Hordi = Hordi[sortind]
-	print Hordi
 	
 	##-------------------------------------------------------------------------
 	## PLOTTING
@@ -131,8 +130,8 @@ def main():
 				xlabel="$\Delta$", ylabel="Incorrect / Correct Product Rates")	
 	ax.set_xlim([Delta.min(),Delta.max()])
 	## Save plot
-	# figfile = plotfile+"_5ProdRatio.png"
-	# plt.savefig(figfile); print me+"Figure saved to",figfile
+	figfile = argv[1]+"/0Efficacy_ProdRateRatio.png"
+	plt.savefig(figfile); print me+"Figure saved to",figfile
 	
 	## Wrap up
 	if verbose: print me+"total execution time:",round(sysT()-t0,2),"seconds"
