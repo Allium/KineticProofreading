@@ -128,6 +128,7 @@ def main():
 	## Sort data in order of increasing Delta
 	sortind = np.argsort(Delta)
 	Delta = Delta[sortind]; Cordi = Cordi[sortind]; Hordi = Hordi[sortind]
+	if verbose: print me+"Deltas found:",Delta
 	
 	##-------------------------------------------------------------------------
 	## PLOTTING
