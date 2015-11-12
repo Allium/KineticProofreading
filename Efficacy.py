@@ -33,6 +33,7 @@ def main():
 	
 	FLAGS
 		-p --npoints	200		How many points to keep for plotting
+		-n --ncurves	1		How many chunks of time to plot separately
 		-s --showfig	False	
 		-v --verbose	False	Print information to screen
 	
@@ -65,12 +66,15 @@ def main():
 	parser = optparse.OptionParser()	
 	parser.add_option('-p','--npoints',
 		dest="npoints", default=200, type="int")
+	parser.add_option('-n','--ncurves',
+		dest="ncurves", default=1, type="int")
 	parser.add_option('-s','--show',
 		dest="showfig", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
 	opt = parser.parse_args()[0]
 	npoints = opt.npoints
+	ncurves = opt.ncurves
 	showfig = opt.showfig
 	verbose = opt.verbose
 	
@@ -84,7 +88,6 @@ def main():
 	
 	Delta = np.zeros(numfiles)
 	
-	ncurves = 2
 	## Product rate ratios
 	if int(argv[2])==2:
 		if verbose: print me+"plotting product rate ratios at",ncurves,"times"
@@ -93,7 +96,7 @@ def main():
 		Hordi = np.zeros((numfiles,ncurves))
 		plotit = "Ratio of product rates for "+network[0]+"and Hopfield networks"
 		ylabel = "Incorrect / Correct Product Rates"
-		figfile = argv[1]+"/0Efficacy_ProdRateRatio.png"
+		figfile = argv[1]+"/0Efficacy_ProdRateRatio_"+str(ncurves)+".png"
 		
 	## Energy costs
 	elif int(argv[2])==3:
@@ -133,7 +136,7 @@ def main():
 	##-------------------------------------------------------------------------
 	## PLOTTING
 	
-	times = np.linspace(0,1,ncurves+3)[1::2].round(2).astype("string")
+	times = np.linspace(0,1,2*ncurves+1)[1::2].round(2).astype("string")
 	colors = ["k","b","r","g","y"]
 	
 	ax = plt.figure().add_subplot(111)
