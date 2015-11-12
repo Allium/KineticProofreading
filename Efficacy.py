@@ -98,11 +98,9 @@ def main():
 		ylabel = "Incorrect / Correct Product Rates"
 		figfile = argv[1]+"/0Efficacy_ProdRateRatio_"+str(ncurves)+".png"
 		
-	## Energy costs
-	elif int(argv[2])==3:
-		pass
+	## Energy costs, time costs
 	else:
-		pass
+		print me+"functionality not written yet. Abort."; exit()
 	
 	## Loop over files
 	for i in range(numfiles):
@@ -117,7 +115,7 @@ def main():
 		## Time-series and k-rates
 		Cdata, Hdata, Ck, Hk = unpack_data(Cfile, Hfile, npoints, verbose)
 		
-		## Extract Delta from rates in header
+		## Extract Delta from rates in header; ensure that files match
 		Delta[i] = Ck[6]/Ck[1]
 		assert Delta[i]==Hk[7]/Hk[4]==Hk[6]/Hk[1]
 		
