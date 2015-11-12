@@ -206,7 +206,6 @@ def main():
 		if showfig: plt.show()
 	
 	## Plot energy usage: versus time and correct product, scheme difference, and all contributions
-	## Want breakdown of energy steps
 	if float(argv[3])%13==0:
 		nrgC = Cdata[9:12,:]; nrgH = Hdata[9:12,:]
 		sumC = nrgC.sum(axis=0); sumH = nrgH.sum(axis=0)

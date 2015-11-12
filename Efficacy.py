@@ -34,6 +34,7 @@ def main():
 	FLAGS
 		-p --npoints	200		How many points to keep for plotting
 		-s --showfig	False	
+		-v --verbose	False	Print information to screen
 	
 	OUTPUTS:
 		Desired plots saved to data directory in .png format
@@ -41,10 +42,11 @@ def main():
 	COMMENTS
 	
 	BUGS AND TODO:
-		-- Use higher-order centered derivatives
 	
 	HISTORY:
 		03/11/2015 Started CS
+		05/11/2015 Product rate comparison plot
+		11/11/2015 Linear fit option added
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -73,64 +75,77 @@ def main():
 	verbose = opt.verbose
 	
 	##-------------------------------------------------------------------------
-	## DATA COLLECTION
+	## DATA COLLECTION AND PLOTTING
 	
-	## Files in directory
-	datafiles = np.sort(glob.glob("Results/*.txt"))
-	numfiles = len(datafiles); assert numfiles%2==0
+	## Find files in directory
+	datafiles = np.sort(glob.glob(argv[1]+"/*.txt"))
+	numfiles = len(datafiles); assert numfiles%2==0; numfiles = numfiles/2
+	if verbose: print me+"found",numfiles,"file pairs"
 	
-	Delta = np.zeros(numfiles/2)
+	Delta = np.zeros(numfiles)
+	
+	ncurves = 2
+	## Product rate ratios
 	if int(argv[2])==2:
-		ncurves = 2
-		Cordi = np.zeros((numfiles/2,ncurves))
-		Hordi = np.zeros((numfiles/2,ncurves))
+		if verbose: print me+"plotting product rate ratios at",ncurves,"times"
+		## Initialise some variables and generate plot strings
+		Cordi = np.zeros((numfiles,ncurves))
+		Hordi = np.zeros((numfiles,ncurves))
+		plotit = "Ratio of product rates for "+network[0]+"and Hopfield networks"
+		ylabel = "Incorrect / Correct Product Rates"
+		figfile = argv[1]+"/0Efficacy_ProdRateRatio.png"
+		
+	## Energy costs
+	elif int(argv[2])==3:
+		pass
 	else:
 		pass
 	
 	## Loop over files
-	for i in range(numfiles/2):
+	for i in range(numfiles):
 		
 		## Filenames
+		## Hfile is Hopfield data and Cfile is the control
+		## This nomenclature is employed for the rest of the code
 		Hfile = datafiles[i]
-		Cfile = datafiles[i+numfiles/2]
+		Cfile = datafiles[i+numfiles]
 		
-		## Unpack data
-		time, Cdata, Hdata, Ck, Hk = unpack_data(Cfile, Hfile, npoints, verbose)
+		## Unpack data (my function below)
+		## Time-series and k-rates
+		Cdata, Hdata, Ck, Hk = unpack_data(Cfile, Hfile, npoints, verbose)
 		
-		## Extract Delta
+		## Extract Delta from rates in header
 		Delta[i] = Ck[6]/Ck[1]
 		assert Delta[i]==Hk[7]/Hk[4]==Hk[6]/Hk[1]
 		
-		## Values for ordinate
+		## Values for ordinate (using my function below)
 		if int(argv[2])==2:
 			Cordi[i] = prod_rate(Cdata[[1,2]],ncurves,True)
 			Hordi[i] = prod_rate(Hdata[[1,2]],ncurves,True)
 		else:
-			print me+"functionality not written yet."; exit()
+			print me+"functionality not written yet. Abort."; exit()
 	
-	## Sort data
+	## Sort data in order of increasing Delta
 	sortind = np.argsort(Delta)
-	Delta = Delta[sortind]
-	Cordi = Cordi[sortind]
-	Hordi = Hordi[sortind]
+	Delta = Delta[sortind]; Cordi = Cordi[sortind]; Hordi = Hordi[sortind]
 	
 	##-------------------------------------------------------------------------
 	## PLOTTING
 	
-	times = np.linspace(0,1,ncurves+2).round(2).astype("string")
+	times = np.linspace(0,1,ncurves+3)[1::2].round(2).astype("string")
 	colors = ["k","b","r","g","y"]
 	
 	ax = plt.figure().add_subplot(111)
+	## Loop over times at which evaluation happens
 	for i in range(ncurves):
-		ax.plot(Delta,Cordi[:,i], colors[i]+"--",label=network[0]+times[i+1]+"*tmax")
+		ax.plot(Delta,Cordi[:,i], colors[i]+"--",label=network[0]+times[i]+"*tmax")
 		ax.plot(Delta,Cordi[:,i], colors[i]+"x")
-		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i+1]+"*tmax")
+		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i]+"*tmax")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
-	plot_acco(ax, title="Ratio of product rates for "+network[0]+"and Hopfield networks",\
-				xlabel="$\Delta$", ylabel="Incorrect / Correct Product Rates")	
+	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
+	ax.set_ylim([0.0,2.0])
 	## Save plot
-	figfile = argv[1]+"/0Efficacy_ProdRateRatio.png"
 	plt.savefig(figfile); print me+"Figure saved to",figfile
 	
 	## Wrap up
@@ -165,6 +180,7 @@ def unpack_data(Cdatafile, Hdatafile, npoints, verbose):
 	assert CN0==HN0
 		
 	## Select relevant columns
+	## 0:time; 4:prod; 8:prod'
 	Cdata = Cdata[[0,4,8,9,10,11,12,13,14]]
 	Hdata = Hdata[[0,4,8,9,10,11,12,13,14]]
 	
@@ -173,31 +189,39 @@ def unpack_data(Cdatafile, Hdatafile, npoints, verbose):
 		Cdata = Cdata[:,np.arange(0,Cdata.shape[1],Cdata.shape[1]/npoints)]
 		Hdata = Hdata[:,np.arange(0,Hdata.shape[1],Hdata.shape[1]/npoints)]
 		
-	## Normalise
+	## Normalise per particle
 	Cdata[1:] /= CN0
 	Hdata[1:] /= HN0
-	
-	## Define time array for clarity
-	time = Cdata[0]
-	
+		
 	if verbose: print me+"data preparation overhead",round(sysT()-t0_unpack_data,2),"seconds."
 	
-	return time, Cdata, Hdata, Cpars[1], Hpars[1]
+	return Cdata, Hdata, Cpars[1], Hpars[1]
 
 ##=============================================================================
 def prod_rate(prod, ntimes, ratio=False):
 	"""
 	Calculate the ratio of product formation rates (incorrect / correct rate)
 	over ntimes intervals.
-	prod is an array whose last dimension hols the time series data.
+	prod is an array whose last dimension holds the time series data. First
+	dimension is product numbers for correct and incorrect substrates.
 	"""
-	me = "Efficacy.prod_rate_ratio: "
-	## Cut off trailing points
-	prod = prod[:,:-(prod.shape[-1]%ntimes)]
+	me = "Efficacy.prod_rate: "
+	## Cut trailing points from end
+	if (prod.shape[-1]%ntimes) != 0:
+		prod = prod[:,:-(prod.shape[-1]%ntimes)]
 	## Split into equal chunks of time
 	chunks = np.array_split(prod, ntimes, axis=1)
-	## Centered derivative
-	prodrate = ndimage.convolve1d(chunks,[-1,0,1],axis=-1).mean(axis=-1)
+	## Derivative
+	# prodrate = ndimage.convolve1d(chunks,[1,-1],axis=-1)
+	prodrate = ndimage.filters.gaussian_filter1d(chunks,10,axis=-1,order=1)
+	## Mean
+	if False:
+		prodrate = prodrate.mean(axis=-1).T
+	## Fit linear
+	else:
+		times = np.array_split(np.arange(0,prod.shape[-1],1.0),ntimes)
+		prodrate = np.array([np.polyfit(times[j],chunks[j][i],1)[0]\
+			for i in range(2) for j in range(ntimes)]).reshape([2,ntimes])
 	if ratio:	return prodrate[1]/prodrate[0]
 	else:		return prodrate
 
