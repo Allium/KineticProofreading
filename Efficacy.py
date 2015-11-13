@@ -81,7 +81,7 @@ def main():
 	##-------------------------------------------------------------------------
 	## DATA COLLECTION AND PLOTTING
 	
-	## Find files in directory
+	## Find files in directory hreigohregsurso
 	datafiles = np.sort(glob.glob(argv[1]+"/*.txt"))
 	numfiles = len(datafiles); assert numfiles%2==0; numfiles = numfiles/2
 	if verbose: print me+"found",numfiles,"file pairs"
