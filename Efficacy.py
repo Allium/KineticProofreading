@@ -81,7 +81,7 @@ def main():
 	##-------------------------------------------------------------------------
 	## DATA COLLECTION AND PLOTTING
 	
-	## Find files in directory hreigohregsurso
+	## Find files in directory
 	datafiles = np.sort(glob.glob(argv[1]+"/*.txt"))
 	numfiles = len(datafiles); assert numfiles%2==0; numfiles = numfiles/2
 	if verbose: print me+"found",numfiles,"file pairs"
@@ -146,7 +146,7 @@ def main():
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
-	ax.set_ylim([0.0,2.0])
+	# ax.set_ylim([0.0,2.0])
 	## Save plot
 	plt.savefig(figfile); print me+"Figure saved to",figfile
 	
