@@ -35,16 +35,20 @@ def main():
 		-p --npoints	200		How many points to keep for plotting
 		-n --ncurves	1		How many chunks of time to plot separately
 		-s --showfig	False	
-		-f --fit		True	Exponential fit
+		-f --fit		True	Exponential fit (when PlotType==2)
 		-v --verbose	False	Print information to screen
 	
 	OUTPUTS:
 		Desired plots saved to data directory in .png format
+		Data file saved to data directory in .npy format
 	
 	COMMENTS
 	
 	BUGS AND TODO:
 		-- The linear fit for energy rates doesn't work
+		-- Consider energy cost ratio
+		-- Plot energy cost against product formed
+		-- Time delay against product formed
 	
 	HISTORY:
 		03/11/2015	Started CS
@@ -52,6 +56,7 @@ def main():
 		11/11/2015	Linear fit for averaging rates
 		14/11/2015	Seek / save data file
 					Fit rate ratio vs Delta to exponential
+					Absolute energy plot
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -187,7 +192,7 @@ def main():
 		ax.plot(Delta,Cordi[:,i], colors[i]+"x")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i]+"*tmax")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
-		## Also plot exponential fits
+		## Also plot exponential fits if applicable and desired
 		if int(argv[2])==2 and fit:
 			fitX,fitC,mC = exp_fit(Delta,Cordi[:,i])
 			fitX,fitH,mH = exp_fit(Delta,Hordi[:,i])
