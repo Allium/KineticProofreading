@@ -48,6 +48,7 @@ def main():
 		03/11/2015 Started CS
 		05/11/2015 Product rate comparison plot
 		11/11/2015 Linear fit option added
+		14/11/2015 Save data file
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -79,57 +80,81 @@ def main():
 	verbose = opt.verbose
 	
 	##-------------------------------------------------------------------------
-	## DATA COLLECTION AND PLOTTING
-	
-	## Find files in directory
-	datafiles = np.sort(glob.glob(argv[1]+"/*.txt"))
-	numfiles = len(datafiles); assert numfiles%2==0; numfiles = numfiles/2
-	if verbose: print me+"found",numfiles,"file pairs"
-	
-	Delta = np.zeros(numfiles)
+	## DATA COLLECTION
+	## Note C means control and H means Hopfield
 	
 	## Product rate ratios
 	if int(argv[2])==2:
 		if verbose: print me+"plotting product rate ratios at",ncurves,"times"
-		## Initialise some variables and generate plot strings
-		Cordi = np.zeros((numfiles,ncurves))
-		Hordi = np.zeros((numfiles,ncurves))
+		## Plot strings
 		plotit = "Ratio of product rates for "+network[0]+"and Hopfield networks"
 		ylabel = "Incorrect / Correct Product Rates"
 		figfile = argv[1]+"/0Efficacy_ProdRateRatio_"+str(ncurves)+".png"
+		outfile = os.path.splitext(figfile)[0]+".npy"
 		
 	## Energy costs, time costs
 	else:
 		print me+"functionality not written yet. Abort."; exit()
 	
-	## Loop over files
-	for i in range(numfiles):
+	## Look for existing file; if none exists, make calculations and save
+	##---------------------------------
+	## Try to find file
+	try:
+		data = np.load(outfile).T
+		Delta = data[0][:,np.newaxis]
+		Cordi = data[1:ncurves+1].T
+		Hordi = data[ncurves+1:].T
+		del data
+		if verbose: print me+"precomputed datafile found",outfile
 		
-		## Filenames
-		## Hfile is Hopfield data and Cfile is the control
-		## This nomenclature is employed for the rest of the code
-		Hfile = datafiles[i]
-		Cfile = datafiles[i+numfiles]
+	except IndexError:
+		print me+"something wrong with the datafile. Generating afresh."
+		raise IOError
 		
-		## Unpack data (my function below)
-		## Time-series and k-rates
-		Cdata, Hdata, Ck, Hk = unpack_data(Cfile, Hfile, npoints, verbose)
+	##---------------------------------
+	## If not found, read datafiles in directory and construct data arrays
+	except IOError:
+		## Find files in directory
+		datafiles = np.sort(glob.glob(argv[1]+"/*.txt"))
+		numfiles = len(datafiles); assert numfiles%2==0; numfiles = numfiles/2
+		if verbose: print me+"found",numfiles,"file pairs"
 		
-		## Extract Delta from rates in header; ensure that files match
-		Delta[i] = Ck[6]/Ck[1]
-		assert Delta[i]==Hk[7]/Hk[4]==Hk[6]/Hk[1]
+		## Initialise arrays
+		Delta = np.zeros(numfiles)
+		Cordi = np.zeros((numfiles,ncurves))
+		Hordi = np.zeros((numfiles,ncurves))
 		
-		## Values for ordinate (using my function below)
-		if int(argv[2])==2:
-			Cordi[i] = prod_rate(Cdata[[1,2]],ncurves,True)
-			Hordi[i] = prod_rate(Hdata[[1,2]],ncurves,True)
-		else:
-			print me+"functionality not written yet. Abort."; exit()
-	
-	## Sort data in order of increasing Delta
-	sortind = np.argsort(Delta)
-	Delta = Delta[sortind]; Cordi = Cordi[sortind]; Hordi = Hordi[sortind]
-	if verbose: print me+"Deltas found:",Delta
+		## Loop over files
+		for i in range(numfiles):
+			
+			## Filenames
+			Hfile = datafiles[i]
+			Cfile = datafiles[i+numfiles]
+			
+			## Unpack data (my function below)
+			## Time-series and k-rates
+			Cdata, Hdata, Ck, Hk = unpack_data(Cfile, Hfile, npoints, verbose)
+			
+			## Extract Delta from rates in header; ensure that files match
+			Delta[i] = Ck[6]/Ck[1]
+			assert Delta[i]==Hk[7]/Hk[4]==Hk[6]/Hk[1]
+			
+			## Values for ordinate (using my function below)
+			if int(argv[2])==2:
+				Cordi[i] = prod_rate(Cdata[[1,2]],ncurves,True)
+				Hordi[i] = prod_rate(Hdata[[1,2]],ncurves,True)
+			else:
+				print me+"functionality not written yet. Abort."; exit()
+		
+		## Sort data in order of increasing Delta
+		sortind = np.argsort(Delta)
+		Delta = Delta[sortind][:,np.newaxis]; Cordi = Cordi[sortind]; Hordi = Hordi[sortind]
+		if verbose: print me+"Deltas found:",Delta.flatten()
+		
+		## Save data
+		np.save(outfile,np.hstack([Delta,Cordi,Hordi]))
+		if verbose: print me+"data saved to",outfile
+	## End except
 	
 	##-------------------------------------------------------------------------
 	## PLOTTING
