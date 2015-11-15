@@ -35,6 +35,7 @@ def main():
 		-p --npoints	200		How many points to keep for plotting
 		-n --ncurves	1		How many chunks of time to plot separately
 		-s --showfig	False	
+		-f --fit		True	Exponential fit
 		-v --verbose	False	Print information to screen
 	
 	OUTPUTS:
@@ -45,10 +46,11 @@ def main():
 	BUGS AND TODO:
 	
 	HISTORY:
-		03/11/2015 Started CS
-		05/11/2015 Product rate comparison plot
-		11/11/2015 Linear fit option added
-		14/11/2015 Save data file
+		03/11/2015	Started CS
+		05/11/2015	Product rate comparison plot
+		11/11/2015	Linear fit option added
+		14/11/2015	Seek / save data file
+					Fit to exponential
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -71,12 +73,15 @@ def main():
 		dest="ncurves", default=1, type="int")
 	parser.add_option('-s','--show',
 		dest="showfig", default=False, action="store_true")
+	parser.add_option('--nofit',
+		dest="nofit", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
 	opt = parser.parse_args()[0]
 	npoints = opt.npoints
 	ncurves = opt.ncurves
 	showfig = opt.showfig
+	fit		= not opt.nofit
 	verbose = opt.verbose
 	
 	##-------------------------------------------------------------------------
@@ -108,7 +113,7 @@ def main():
 		if verbose: print me+"precomputed datafile found",outfile
 		
 	except IndexError:
-		print me+"something wrong with the datafile. Generating afresh."
+		if verbose: print me+"something wrong with the datafile. Generating afresh."
 		raise IOError
 		
 	##---------------------------------
@@ -160,18 +165,25 @@ def main():
 	## PLOTTING
 	
 	times = np.linspace(0,1,2*ncurves+1)[1::2].round(2).astype("string")
-	colors = ["k","b","r","g","y"]
+	colors = ["k","b","r","g"]
 	
 	ax = plt.figure().add_subplot(111)
-	## Loop over times at which evaluation happens
+	## Loop over times at which evaluation happens;
+	## Plot points and lines for control and Hopfield
 	for i in range(ncurves):
 		ax.plot(Delta,Cordi[:,i], colors[i]+"--",label=network[0]+times[i]+"*tmax")
 		ax.plot(Delta,Cordi[:,i], colors[i]+"x")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i]+"*tmax")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
+		## Also plot exponential fits
+		if fit:
+			fitX,fitC,mC = exp_fit(Delta,Cordi[:,i])
+			fitX,fitH,mH = exp_fit(Delta,Hordi[:,i])
+			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp["+str(round(mC,2))+"\Delta]$")
+			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
-	# ax.set_ylim([0.0,2.0])
+	if np.hstack([Cordi,Hordi]).flatten().max() > 2.0: ax.set_ylim([0.0,2.0])
 	## Save plot
 	plt.savefig(figfile); print me+"Figure saved to",figfile
 	
@@ -251,6 +263,18 @@ def prod_rate(prod, ntimes, ratio=False):
 			for i in range(2) for j in range(ntimes)]).reshape([2,ntimes])
 	if ratio:	return prodrate[1]/prodrate[0]
 	else:		return prodrate
+
+##=============================================================================
+def exp_fit(x,y):
+	"""
+	Make an exponential fit to points  y(x).
+	Returns new x and y coordinates.
+	Intercept should be 1.0 exactly; I allow it to vary here.
+	"""
+	fit = np.polyfit(x.flatten(),np.log(y.flatten()),1)
+	fit_fn = np.poly1d(fit)
+	X = np.linspace(0,x[-1],5*x.size)
+	return X, np.exp(fit_fn(X)), fit[0]
 
 ##=============================================================================
 if __name__ =="__main__":
