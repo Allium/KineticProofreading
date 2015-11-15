@@ -44,13 +44,14 @@ def main():
 	COMMENTS
 	
 	BUGS AND TODO:
+		-- The linear fit for energy rates doesn't work
 	
 	HISTORY:
 		03/11/2015	Started CS
 		05/11/2015	Product rate comparison plot
-		11/11/2015	Linear fit option added
+		11/11/2015	Linear fit for averaging rates
 		14/11/2015	Seek / save data file
-					Fit to exponential
+					Fit rate ratio vs Delta to exponential
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -88,18 +89,22 @@ def main():
 	## DATA COLLECTION
 	## Note C means control and H means Hopfield
 	
+	## Plot strings
 	## Product rate ratios
 	if int(argv[2])==2:
-		if verbose: print me+"plotting product rate ratios at",ncurves,"times"
-		## Plot strings
 		plotit = "Ratio of product rates for "+network[0]+"and Hopfield networks"
 		ylabel = "Incorrect / Correct Product Rates"
 		figfile = argv[1]+"/0Efficacy_ProdRateRatio_"+str(ncurves)+".png"
-		outfile = os.path.splitext(figfile)[0]+".npy"
-		
-	## Energy costs, time costs
+	## Energy costs
+	elif int(argv[2])==3:
+		plotit = "Energy dissipation rate for "+network[0]+"and Hopfield networks"
+		ylabel = "Energy dissipation rate"
+		figfile = argv[1]+"/0Efficacy_EnergyRateRatio_"+str(ncurves)+".png"
 	else:
 		print me+"functionality not written yet. Abort."; exit()
+	
+	outfile = os.path.splitext(figfile)[0]+".npy"
+	if verbose: print me+"plotting:",plotit,"at",ncurves,"times"
 	
 	## Look for existing file; if none exists, make calculations and save
 	##---------------------------------
@@ -145,9 +150,16 @@ def main():
 			assert Delta[i]==Hk[7]/Hk[4]==Hk[6]/Hk[1]
 			
 			## Values for ordinate (using my function below)
+			## Product rate
 			if int(argv[2])==2:
 				Cordi[i] = prod_rate(Cdata[[1,2]],ncurves,True)
 				Hordi[i] = prod_rate(Hdata[[1,2]],ncurves,True)
+			## Energy rate
+			elif int(argv[2])==3:
+				CErate = prod_rate(Cdata[3:].sum(axis=0),ncurves,False)
+				HErate = prod_rate(Hdata[3:].sum(axis=0),ncurves,False)
+				Cordi[i] = CErate
+				Hordi[i] = HErate
 			else:
 				print me+"functionality not written yet. Abort."; exit()
 		
@@ -176,14 +188,15 @@ def main():
 		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i]+"*tmax")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
 		## Also plot exponential fits
-		if fit:
+		if int(argv[2])==2 and fit:
 			fitX,fitC,mC = exp_fit(Delta,Cordi[:,i])
 			fitX,fitH,mH = exp_fit(Delta,Hordi[:,i])
 			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp["+str(round(mC,2))+"\Delta]$")
 			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
-	if np.hstack([Cordi,Hordi]).flatten().max() > 2.0: ax.set_ylim([0.0,2.0])
+	ax.set_ylim(bottom=0.0)
+	if np.hstack([Cordi,Hordi]).flatten().max() > 2.0: ax.set_ylim(top=2.0)
 	## Save plot
 	plt.savefig(figfile); print me+"Figure saved to",figfile
 	
@@ -241,29 +254,33 @@ def prod_rate(prod, ntimes, ratio=False):
 	"""
 	Calculate the ratio of product formation rates (incorrect / correct rate)
 	over ntimes intervals.
-	prod is an array whose last dimension holds the time series data. First
-	dimension is product numbers for correct and incorrect substrates.
+	prod is an array whose last dimension holds the time series data.
+	If we consider product rate ratio, first dimension is product numbers for
+	correct and incorrect substrates. Second dimension is time series.
+	If we consider energy, the first dimension is the time series.
 	"""
 	me = "Efficacy.prod_rate: "
-	## Cut trailing points from end
+	## Are we comparing incorrect and correct? If so, w=2; if not, w=1
+	w = len(prod.shape)
+	## Cut trailing time series points from end
 	if (prod.shape[-1]%ntimes) != 0:
 		prod = prod[:,:-(prod.shape[-1]%ntimes)]
 	## Split into equal chunks of time
-	chunks = np.array_split(prod, ntimes, axis=1)
+	chunks = np.array_split(prod, ntimes, axis=-1)
 	## Derivative
 	# prodrate = ndimage.convolve1d(chunks,[1,-1],axis=-1)
 	prodrate = ndimage.filters.gaussian_filter1d(chunks,10,axis=-1,order=1)
 	## Mean
-	if False:
+	if w==1:	## Crude!
 		prodrate = prodrate.mean(axis=-1).T
 	## Fit linear
 	else:
 		times = np.array_split(np.arange(0,prod.shape[-1],1.0),ntimes)
 		prodrate = np.array([np.polyfit(times[j],chunks[j][i],1)[0]\
-			for i in range(2) for j in range(ntimes)]).reshape([2,ntimes])
+			for i in range(w) for j in range(ntimes)]).reshape([w,ntimes])
 	if ratio:	return prodrate[1]/prodrate[0]
 	else:		return prodrate
-
+	
 ##=============================================================================
 def exp_fit(x,y):
 	"""
