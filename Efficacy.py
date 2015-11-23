@@ -1,6 +1,7 @@
 
 import numpy as np
 from scipy import ndimage
+from scipy.optimize import leastsq
 from matplotlib import pyplot as plt
 import optparse
 from sys import argv
@@ -46,7 +47,7 @@ def main():
 	
 	BUGS AND TODO:
 		-- The linear fit for energy rates doesn't work
-		-- Consider energy cost ratio
+		-- Consider energy cost *ratio*
 		-- Plot energy cost against product formed
 		-- Time delay against product formed
 	
@@ -72,7 +73,7 @@ def main():
 	network = ["no-loop ","Hopfield "]
 	
 	## Options
-	parser = optparse.OptionParser()	
+	parser = optparse.OptionParser(conflict_handler="resolve")	
 	parser.add_option('-p','--npoints',
 		dest="npoints", default=200, type="int")
 	parser.add_option('-n','--ncurves',
@@ -194,8 +195,8 @@ def main():
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
 		## Also plot exponential fits if applicable and desired
 		if int(argv[2])==2 and fit:
-			fitX,fitC,mC = exp_fit(Delta,Cordi[:,i])
-			fitX,fitH,mH = exp_fit(Delta,Hordi[:,i])
+			fitX,fitC,mC = lin_fit(Delta.flatten(),np.log(Cordi[:,i].flatten()))
+			fitX,fitH,mH = lin_fit(Delta.flatten(),np.log(Hordi[:,i].flatten()))
 			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp["+str(round(mC,2))+"\Delta]$")
 			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
@@ -237,9 +238,9 @@ def unpack_data(Cdatafile, Hdatafile, npoints, verbose):
 	assert CN0==HN0
 		
 	## Select relevant columns
-	## 0:time; 4:prod; 8:prod'
-	Cdata = Cdata[[0,4,8,9,10,11,12,13,14]]
-	Hdata = Hdata[[0,4,8,9,10,11,12,13,14]]
+	## 0:time; 4:prod; 8:prod'; rest are ~energy-consuming steps
+	Cdata = Cdata[[0,4,8,10,11,12,14,15,16]]
+	Hdata = Hdata[[0,4,8,10,11,12,14,15,16]]
 	
 	## Prune in time
 	if Cdata.shape[1] > npoints:
@@ -291,13 +292,25 @@ def exp_fit(x,y):
 	"""
 	Make an exponential fit to points  y(x).
 	Returns new x and y coordinates.
-	Intercept should be 1.0 exactly; I allow it to vary here.
+	Intercept of exponential should be 1.0 exactly; I allow it to vary here.
 	"""
 	fit = np.polyfit(x.flatten(),np.log(y.flatten()),1)
 	fit_fn = np.poly1d(fit)
-	X = np.linspace(0,x[-1],5*x.size)
+	X = np.linspace(1,x[-1],5*x.size)
 	return X, np.exp(fit_fn(X)), fit[0]
-
+	
+def lin_fit(x,y):
+	"""
+	Linear fit of the form y=mx.
+	Returns fit evaluated on fine points X.
+	"""
+	fitfunc = lambda m,x: m*(x-1.0)
+	errfunc = lambda m,x,y: fitfunc(m, x) - y
+	mi = -0.1
+	mf, success = leastsq(errfunc, mi, args = (x, y))
+	X = np.linspace(1,x[-1],5*x.size)
+	return X, np.exp(fitfunc(mf,X)), mf
+	
 ##=============================================================================
 if __name__ =="__main__":
 	main()

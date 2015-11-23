@@ -44,6 +44,7 @@ def main():
 	FLAGS
 		-p --npoints	200		How many points to keep for plotting
 		-s --showfig	False	
+		-v --verbose	False
 	
 	OUTPUTS:
 		outfile#	Desired plot(s) saved to data directory in .png format
@@ -61,7 +62,7 @@ def main():
 		23/10/2015 Plotting time delays
 		02/10/2015 Energy consumption multiplot
 	"""
-	me = "HopfieldPlotter.py: "
+	me = "HopfieldPlotter.main: "
 	t0 = sysT()
 	
 	##-------------------------------------------------------------------------
@@ -81,8 +82,11 @@ def main():
 		dest="npoints", default=200, type="int")
 	parser.add_option('-s','--show',
 		dest="showfig", default=False, action="store_true")
+	parser.add_option('-v','--verbose',
+		dest="verbose", default=False, action="store_true")
 	opt = parser.parse_args()[0]
 	showfig = opt.showfig
+	verbose = opt.verbose
 	
 	## Output filename base
 	plotfile = os.path.splitext(Hdatafile)[0]
@@ -118,9 +122,8 @@ def main():
 	assert Cdata.shape==Hdata.shape
 	assert all(Cdata[0]==Hdata[0])
 	assert EN0==HN0
-	print me+"simulation parameters\n",\
-		network[0],"{k}\t",Epars[1],"\n",\
-		network[1],"{k}\t",Hpars[1]
+	if verbose: print me+"simulation parameters\n",\
+		network[0],"{k}\t",Epars[1],"\n",network[1],"{k}\t",Hpars[1]
 	
 	## Define time array for clarity
 	time = Cdata[0]
@@ -207,7 +210,8 @@ def main():
 	
 	## Plot energy usage: versus time and correct product, scheme difference, and all contributions
 	if float(argv[3])%13==0:
-		nrgC = Cdata[9:12,:]; nrgH = Hdata[9:12,:]
+		nrginds = [10,11,12,14,15,16]
+		nrgC = Cdata[nrginds,:]; nrgH = Hdata[nrginds,:]
 		sumC = nrgC.sum(axis=0); sumH = nrgH.sum(axis=0)
 		fig,ax = plt.subplots(2,2)
 		## Versus time
@@ -223,10 +227,10 @@ def main():
 		plot_acco(ax[0,1], title="Total $E$", xlabel="Correct product (fraction of final)",\
 			ylabel="Energy units per particle, $E/N_0$", legloc="upper left")
 		## All energy consumtion pathways
-		ax[1,1].plot(time,nrgC[0],"r--",label=network[0]+"BC")
+		ax[1,1].plot(time,nrgC[0],"r--",label=network[0]+"CB")
 		# ax[1,1].plot(time,nrgC[1],"g--",label=network[0]+"CA")
 		ax[1,1].plot(time,nrgC[2],"b--",label=network[0]+"CD")
-		ax[1,1].plot(time,nrgH[0],"r-", label="Hopfield BC")
+		ax[1,1].plot(time,nrgH[0],"r-", label="Hopfield CB")
 		ax[1,1].plot(time,nrgH[1],"g-", label="Hopfield CA")
 		ax[1,1].plot(time,nrgH[2],"b-", label="Hopfield CD")
 		plot_acco(ax[1,1], title="Individual steps' consumption", ylabel="Energy units per particle, $E/N_0$",\
@@ -239,7 +243,7 @@ def main():
 		if showfig: plt.show()
 	
 	## Wrap up
-	if not showfig: print me+"Execution time",round(sysT()-t0,2),"seconds"
+	if verbose and not showfig: print me+"Execution time",round(sysT()-t0,2),"seconds"
 	
 	return
 
