@@ -8,6 +8,7 @@ from sys import argv
 import os, glob
 from time import time as sysT
 from HopfieldPlotter import plot_acco
+from HopfieldPlotter import time_delay
 from Plotter import read_header, get_headinfo
 
 def main():
@@ -48,8 +49,10 @@ def main():
 	BUGS AND TODO:
 		-- The linear fit for energy rates doesn't work
 		-- Consider energy cost *ratio*
-		-- Plot energy cost against product formed
-		-- Time delay against product formed
+		-- Time delay rate against product formed: impossible to get meningful results
+			for incorrect product because Hopfield is too good at suppressing it. The
+			correct product plot works, but is less interesting because it doesn't change
+			with Delta
 	
 	HISTORY:
 		03/11/2015	Started CS
@@ -58,6 +61,7 @@ def main():
 		14/11/2015	Seek / save data file
 					Fit rate ratio vs Delta to exponential
 					Absolute energy plot
+		26/11/2015	Included time-delay rate option; currently throws error.
 	"""
 	me = "Efficacy.main: "
 	t0 = sysT()
@@ -106,6 +110,11 @@ def main():
 		plotit = "Energy dissipation rate for "+network[0]+"and Hopfield networks"
 		ylabel = "Energy dissipation rate"
 		figfile = argv[1]+"/0Efficacy_EnergyRateRatio_"+str(ncurves)+".png"
+	## Time cost
+	elif int(argv[2])==5:
+		plotit = "Rate of time delay for given product for "+network[0]+"and Hopfield networks"
+		ylabel = "Time delay rate per product, $\\partial{\\Delta t}/\\partial P$"
+		figfile = argv[1]+"/0Efficacy_TimeLagRate_"+str(ncurves)+".png"
 	else:
 		print me+"functionality not written yet. Abort."; exit()
 	
@@ -162,16 +171,21 @@ def main():
 				Hordi[i] = prod_rate(Hdata[[1,2]],ncurves,True)
 			## Energy rate
 			elif int(argv[2])==3:
-				CErate = prod_rate(Cdata[3:].sum(axis=0),ncurves,False)
-				HErate = prod_rate(Hdata[3:].sum(axis=0),ncurves,False)
-				Cordi[i] = CErate
-				Hordi[i] = HErate
+				Cordi[i] = prod_rate(Cdata[3:].sum(axis=0),ncurves,False)
+				Hordi[i] = prod_rate(Hdata[3:].sum(axis=0),ncurves,False)
+			## Time lag in producing correct product
+			elif int(argv[2])==5:
+				ncurves = 1	## Fudge for now
+				## Hordi is correct and Cordi is incorrect product
+				Hordi[i] = time_lag(Hdata[0],Cdata[1],Hdata[1])
+				Cordi[i] = time_lag(Hdata[0],Cdata[2],Hdata[2])
 			else:
 				print me+"functionality not written yet. Abort."; exit()
 		
 		## Sort data in order of increasing Delta
 		sortind = np.argsort(Delta)
 		Delta = Delta[sortind][:,np.newaxis]; Cordi = Cordi[sortind]; Hordi = Hordi[sortind]
+		# if int(argv[2])==3: Cordi, Hordi = Cordi/Cordi[0], Hordi/Cordi[0]
 		if verbose: print me+"Deltas found:",Delta.flatten()
 		
 		## Save data
@@ -201,7 +215,7 @@ def main():
 			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
-	ax.set_ylim(bottom=0.0)
+	# ax.set_ylim(bottom=0.0)
 	if np.hstack([Cordi,Hordi]).flatten().max() > 2.0: ax.set_ylim(top=2.0)
 	## Save plot
 	plt.savefig(figfile); print me+"Figure saved to",figfile
@@ -287,6 +301,17 @@ def prod_rate(prod, ntimes, ratio=False):
 	if ratio:	return prodrate[1]/prodrate[0]
 	else:		return prodrate
 	
+##=============================================================================
+def time_lag(t,CCP,HCP):
+	"""
+	Return linear fit slope for time delay for correct product formation between H and C
+	"""
+	P,Dt = time_delay(t,CCP,HCP)
+	## Cut transient
+	# P = P[len(P)/6:]; Dt = Dt[len(Dt)/6:]
+	fit = np.polyfit(P,Dt,1)
+	return fit[0]
+
 ##=============================================================================
 def exp_fit(x,y):
 	"""
