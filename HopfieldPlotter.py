@@ -196,12 +196,12 @@ def main():
 		plt.savefig(figfile); print me+"Figure saved to",figfile
 		if showfig: plt.show()
 	
-	## Plot delay in time for different schemes to achieve a concentration of product
+	## Plot delay in time for different schemes to achieve a concentration of CORRECT product
 	if float(argv[3])%11==0:
 		ax = plt.figure().add_subplot(111)
 		ax.plot(*time_delay(time,Cdata[4],Hdata[4]),color="b",label=None)
 		ylabel = "Time delay, $\Delta t$"
-		plot_acco(ax, title="Time delay for product formation between "+network[0]+"and Hopfield networks",\
+		plot_acco(ax, title="Time delay for CORRECT product formation between "+network[0]+"and Hopfield networks",\
 					xlabel="Product concentration $[P]$",ylabel=ylabel)
 		## Save plot
 		figfile = plotfile+"_11DtvP.png"
@@ -287,13 +287,12 @@ def time_delay(x,y1,y2):
 	## Interpolate x as a function of y: x=g(y)
 	g1 = interp1d(y1,x, bounds_error=False,fill_value=0.0)
 	g2 = interp1d(y2,x, bounds_error=False,fill_value=0.0)
-	## Array of y-ticks
-	yarr = np.linspace(0,round(np.append(y1,y2).max()+0.05,1),200)
+	## Array of y-ticks. The maximum y should be determined by the smaller curve.
+	yarr = np.linspace(0,round(min(y1.max(),y2.max()),3),201)
 	## Inverted functions evaluated at points yarr
 	x1, x2 = g1(yarr), g2(yarr)
 	## Sometimes we run out of values in the x_i arrays, because one of the curves
-	## runs out of y-values and interp1d fills with zeros. Must clip.
-	## There will be a better way of doing this...
+	## only reaches a lower y-value and interp1d fills with zeros. Must clip.
 	maxidx = min(x1.nonzero()[0][-1],x2.nonzero()[0][-1])
 	x1, x2, yarr = x1[:maxidx], x2[:maxidx], yarr[:maxidx]
 	Dx = x2-x1	
