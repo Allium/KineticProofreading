@@ -281,16 +281,23 @@ def hopfield_prod(S,rates,E0=1):
 ##=============================================================================
 def time_delay(x,y1,y2):
 	"""
+	Find distance between two curves as a function of ordinate
 	"""
 	me = "HopfieldPlotter.time_delay: "	
 	## Interpolate x as a function of y: x=g(y)
-	g1 = sp.interpolate.interp1d(y1,x, bounds_error=False)
-	g2 = interp1d(y2,x, bounds_error=False)
+	g1 = interp1d(y1,x, bounds_error=False,fill_value=0.0)
+	g2 = interp1d(y2,x, bounds_error=False,fill_value=0.0)
 	## Array of y-ticks
 	yarr = np.linspace(0,round(np.append(y1,y2).max()+0.05,1),200)
-	## Delta x
-	Dx = g2(yarr)-g1(yarr)	
-	return yarr,Dx
+	## Inverted functions evaluated at points yarr
+	x1, x2 = g1(yarr), g2(yarr)
+	## Sometimes we run out of values in the x_i arrays, because one of the curves
+	## runs out of y-values and interp1d fills with zeros. Must clip.
+	## There will be a better way of doing this...
+	maxidx = min(x1.nonzero()[0][-1],x2.nonzero()[0][-1])
+	x1, x2, yarr = x1[:maxidx], x2[:maxidx], yarr[:maxidx]
+	Dx = x2-x1	
+	return yarr, Dx
 	
 
 ##================================================
