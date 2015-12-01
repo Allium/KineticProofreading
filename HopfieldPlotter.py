@@ -204,7 +204,7 @@ def main():
 		ax = plt.figure().add_subplot(111)
 		ax.plot(*time_delay(time,Cdata[4],Hdata[4]),color="b",label=None)
 		ylabel = "Time delay, $\Delta t$"
-		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". "+"Time delay for CORRECT product formation between "+network[0]+"and Hopfield",\
+		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". "+"Time delay for CORRECT product formation",\
 					xlabel="Product concentration $[P]$",ylabel=ylabel)
 		## Save plot
 		figfile = plotfile+"_11DtvP.png"
