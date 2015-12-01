@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy import ndimage
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq, curve_fit
 from matplotlib import pyplot as plt
 import optparse
 from sys import argv
@@ -203,14 +203,14 @@ def main():
 	## Loop over times at which evaluation happens;
 	## Plot points and lines for control and Hopfield
 	for i in range(ncurves):
-		ax.plot(Delta,Cordi[:,i], colors[i]+"--",label=network[0]+times[i]+"*tmax")
-		ax.plot(Delta,Cordi[:,i], colors[i]+"x")
-		ax.plot(Delta,Hordi[:,i], colors[i]+"-" ,label=network[1]+times[i]+"*tmax")
-		ax.plot(Delta,Hordi[:,i], colors[i]+"o")
+		ax.plot(Delta,Cordi[:,i], colors[i]+"x--",label=network[0]+times[i]+"*tmax")
+		# ax.plot(Delta,Cordi[:,i], colors[i]+"x")
+		ax.plot(Delta,Hordi[:,i], colors[i]+"o-" ,label=network[1]+times[i]+"*tmax")
+		# ax.plot(Delta,Hordi[:,i], colors[i]+"o")
 		## Also plot exponential fits if applicable and desired
 		if int(argv[2])==2 and fit:
-			fitX,fitC,mC = lin_fit(Delta.flatten(),np.log(Cordi[:,i].flatten()))
-			fitX,fitH,mH = lin_fit(Delta.flatten(),np.log(Hordi[:,i].flatten()))
+			fitX,fitC,mC = exp_fit(Delta.flatten(),Cordi[:,i].flatten())
+			fitX,fitH,mH = exp_fit(Delta.flatten(),Hordi[:,i].flatten())
 			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp["+str(round(mC,2))+"\Delta]$")
 			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
@@ -319,22 +319,23 @@ def exp_fit(x,y):
 	Returns new x and y coordinates.
 	Intercept of exponential should be 1.0 exactly; I allow it to vary here.
 	"""
-	fit = np.polyfit(x.flatten(),np.log(y.flatten()),1)
-	fit_fn = np.poly1d(fit)
+	fitfunc = lambda x,m: np.exp(-m*(x-1.0))
+	popt, pcov = curve_fit(fitfunc, x.flatten(), y.flatten())
 	X = np.linspace(1,x[-1],5*x.size)
-	return X, np.exp(fit_fn(X)), fit[0]
+	return X, fitfunc(X, *popt), popt[0]
 	
 def lin_fit(x,y):
 	"""
 	Linear fit of the form y=mx.
 	Returns fit evaluated on fine points X.
+	NOTE this is a bad function for fitting exponentials
 	"""
 	fitfunc = lambda m,x: m*(x-1.0)
 	errfunc = lambda m,x,y: fitfunc(m, x) - y
-	mi = -0.1
+	mi = -0.1	## Initial guess
 	mf, success = leastsq(errfunc, mi, args = (x, y))
 	X = np.linspace(1,x[-1],5*x.size)
-	return X, np.exp(fitfunc(mf,X)), mf
+	return X, fitfunc(mf,X), mf
 	
 ##=============================================================================
 if __name__ =="__main__":
