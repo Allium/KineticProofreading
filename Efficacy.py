@@ -204,9 +204,7 @@ def main():
 	## Plot points and lines for control and Hopfield
 	for i in range(ncurves):
 		ax.plot(Delta,Cordi[:,i], colors[i]+"x--",label=network[0]+times[i]+"*tmax")
-		# ax.plot(Delta,Cordi[:,i], colors[i]+"x")
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o-" ,label=network[1]+times[i]+"*tmax")
-		# ax.plot(Delta,Hordi[:,i], colors[i]+"o")
 		## Also plot exponential fits if applicable and desired
 		if int(argv[2])==2 and fit:
 			fitX,fitC,mC = exp_fit(Delta.flatten(),Cordi[:,i].flatten())
