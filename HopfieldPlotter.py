@@ -87,7 +87,7 @@ def main():
 	opt = parser.parse_args()[0]
 	showfig = opt.showfig
 	verbose = opt.verbose
-	
+		
 	## Output filename base
 	plotfile = os.path.splitext(Hdatafile)[0]
 	
@@ -96,8 +96,8 @@ def main():
 	
 	## Unpack data from file
 	try:
-		Ehead = read_header(Cdatafile)
-		EN0, Epars = get_headinfo(Ehead)
+		Chead = read_header(Cdatafile)
+		CN0, Cpars = get_headinfo(Chead)
 		Cdata = np.loadtxt(Cdatafile,skiprows=8,unpack=True)
 		Hhead = read_header(Hdatafile)
 		HN0, Hpars = get_headinfo(Hhead)
@@ -115,15 +115,18 @@ def main():
 		Hdata = Hdata[:,np.arange(0,Hdata.shape[1],Hdata.shape[1]/opt.npoints)]
 		
 	## Normalise
-	Cdata[1:] /= EN0
+	Cdata[1:] /= CN0
 	Hdata[1:] /= HN0
 		
 	## Ensure parameters match between the two files
 	assert Cdata.shape==Hdata.shape
 	assert all(Cdata[0]==Hdata[0])
-	assert EN0==HN0
+	assert CN0==HN0
 	if verbose: print me+"simulation parameters\n",\
-		network[0],"{k}\t",Epars[1],"\n",network[1],"{k}\t",Hpars[1]
+		network[0],"{k}\t",Cpars[1],"\n",network[1],"{k}\t",Hpars[1]
+	
+	## Calculate Delta
+	Delta = Cpars[1][6]/Cpars[1][1]
 	
 	## Define time array for clarity
 	time = Cdata[0]
@@ -140,11 +143,11 @@ def main():
 		for i in range(1,5):
 			ax1.plot(time,Cdata[i,:],  colours[i]+"-", label=labels[0]+str(i))
 			ax1.plot(time,Cdata[i+4,:],colours[i]+"--",label=labels[1]+str(i))
-		plot_acco(ax1, title=network[0],ylabel="Fraction $N/N_0$")	
+		plot_acco(ax1, title="$\\Delta=$"+str(Delta)+". "+network[0],ylabel="Fraction $N/N_0$")	
 		for i in range(1,5):
 			ax2.plot(time,Hdata[i,:],  colours[i]+"-", label=labels[0]+str(i))
 			ax2.plot(time,Hdata[i+4,:],colours[i]+"--",label=labels[1]+str(i))
-		plot_acco(ax2, title=network[1])		
+		plot_acco(ax2, title="$\\Delta=$"+str(Delta)+". "+network[1])		
 		## Save plot
 		figfile = plotfile+"_2FullKinetics.png"
 		plt.savefig(figfile); print me+"Figure saved to",figfile
@@ -157,7 +160,7 @@ def main():
 		ax.plot(time,Cdata[8,:], "k"+"--",label=network[0]+labels[1])
 		ax.plot(time,Hdata[4,:], "b"+"-", label=network[1]+labels[0])
 		ax.plot(time,Hdata[8,:], "b"+"--",label=network[1]+labels[1])
-		plot_acco(ax, title="Product production: "+network[0]+"versus Hopfield")	
+		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". Product "+network[0]+"versus Hopfield")	
 		## Save plot
 		figfile = plotfile+"_3ProdKinetics.png"
 		plt.savefig(figfile); print me+"Figure saved to",figfile
@@ -169,7 +172,7 @@ def main():
 		ax.plot(time,Cdata[8,:]/Cdata[4,:], "k"+"-",label=network[0])
 		ax.plot(time,Hdata[8,:]/Hdata[4,:], "b"+"-",label=network[1])
 		ylabel = "Incorrect / Correct Product Concentration"
-		plot_acco(ax, title="Ratio of products for "+network[0]+"and Hopfield networks",\
+		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". "+"Ratio of products for "+network[0]+"and Hopfield",\
 					ylabel=ylabel)		
 		## Save plot
 		figfile = plotfile+"_5ProdRatio.png"
@@ -189,7 +192,7 @@ def main():
 		# ax.plot(time,hopfield_prod(Hdata[1],Hpars[1][:-2])/hopfield_prod(Hdata[1],Hpars[1][[0,6,2,3,7,5]])\
 			# ,"b--",label="prediction")
 		ylabel = "Incorrect / Correct Product Formation Rate"
-		plot_acco(ax, title="Rate of product formation for "+network[0]+"and Hopfield networks",\
+		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". "+"Rate of product formation for "+network[0]+"and Hopfield",\
 					ylabel=ylabel)
 		## Save plot
 		figfile = plotfile+"_7ProdRateRatio.png"
@@ -201,7 +204,7 @@ def main():
 		ax = plt.figure().add_subplot(111)
 		ax.plot(*time_delay(time,Cdata[4],Hdata[4]),color="b",label=None)
 		ylabel = "Time delay, $\Delta t$"
-		plot_acco(ax, title="Time delay for CORRECT product formation between "+network[0]+"and Hopfield networks",\
+		plot_acco(ax, title="$\\Delta=$"+str(Delta)+". "+"Time delay for CORRECT product formation between "+network[0]+"and Hopfield",\
 					xlabel="Product concentration $[P]$",ylabel=ylabel)
 		## Save plot
 		figfile = plotfile+"_11DtvP.png"
