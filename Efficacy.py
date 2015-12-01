@@ -209,8 +209,8 @@ def main():
 		if int(argv[2])==2 and fit:
 			fitX,fitC,mC = exp_fit(Delta.flatten(),Cordi[:,i].flatten())
 			fitX,fitH,mH = exp_fit(Delta.flatten(),Hordi[:,i].flatten())
-			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp["+str(round(mC,2))+"\Delta]$")
-			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp["+str(round(mH,2))+"\Delta]$")
+			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp[-"+str(round(mC,2))+"\Delta]$")
+			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp[-"+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
 	# ax.set_ylim(bottom=0.0)
