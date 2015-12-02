@@ -207,10 +207,10 @@ def main():
 		ax.plot(Delta,Hordi[:,i], colors[i]+"o-" ,label=network[1]+times[i]+"*tmax")
 		## Also plot exponential fits if applicable and desired
 		if int(argv[2])==2 and fit:
-			fitX,fitC,mC = exp_fit(Delta.flatten(),Cordi[:,i].flatten())
-			fitX,fitH,mH = exp_fit(Delta.flatten(),Hordi[:,i].flatten())
-			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\exp[-"+str(round(mC,2))+"\Delta]$")
-			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\exp[-"+str(round(mH,2))+"\Delta]$")
+			fitX,fitC,mC = pwr_fit(Delta.flatten(),Cordi[:,i].flatten())
+			fitX,fitH,mH = pwr_fit(Delta.flatten(),Hordi[:,i].flatten())
+			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\\Delta^{"+str(round(mH,2))+"}$")#\exp["+str(round(mC,2))+"\Delta]$")
+			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\\Delta^{"+str(round(mC,2))+"}$")#\exp["+str(round(mH,2))+"\Delta]$")
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
 	# ax.set_ylim(bottom=0.0)
@@ -313,11 +313,20 @@ def time_lag(t,CCP,HCP):
 ##=============================================================================
 def exp_fit(x,y):
 	"""
-	Make an exponential fit to points  y(x).
+	Make an exponential fit to points y(x).
 	Returns new x and y coordinates.
-	Intercept of exponential should be 1.0 exactly; I allow it to vary here.
 	"""
 	fitfunc = lambda x,m: np.exp(-m*(x-1.0))
+	popt, pcov = curve_fit(fitfunc, x.flatten(), y.flatten())
+	X = np.linspace(1,x[-1],5*x.size)
+	return X, fitfunc(X, *popt), -popt[0]
+	
+def pwr_fit(x,y):
+	"""
+	Make a power-law fit to points y(x).
+	Returns new x and y coordinates on finer grid.
+	"""
+	fitfunc = lambda x,m: np.power(x,m)
 	popt, pcov = curve_fit(fitfunc, x.flatten(), y.flatten())
 	X = np.linspace(1,x[-1],5*x.size)
 	return X, fitfunc(X, *popt), popt[0]
