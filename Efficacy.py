@@ -203,14 +203,15 @@ def main():
 	## Loop over times at which evaluation happens;
 	## Plot points and lines for control and Hopfield
 	for i in range(ncurves):
-		ax.plot(Delta,Cordi[:,i], colors[i]+"x--",label=network[0]+times[i]+"*tmax")
-		ax.plot(Delta,Hordi[:,i], colors[i]+"o-" ,label=network[1]+times[i]+"*tmax")
-		## Also plot exponential fits if applicable and desired
+		ax.plot(Delta,Cordi[:,i], colors[i]+"x--",label=network[0])#+times[i]+"*tmax")
+		ax.plot(Delta,Hordi[:,i], colors[i]+"o-" ,label=network[1])#+times[i]+"*tmax")
+		## Also plot fits if applicable and desired
 		if int(argv[2])==2 and fit:
 			fitX,fitC,mC = pwr_fit(Delta.flatten(),Cordi[:,i].flatten())
 			fitX,fitH,mH = pwr_fit(Delta.flatten(),Hordi[:,i].flatten())
-			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\\Delta^{"+str(round(mH,2))+"}$")#\exp["+str(round(mC,2))+"\Delta]$")
-			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\\Delta^{"+str(round(mC,2))+"}$")#\exp["+str(round(mH,2))+"\Delta]$")
+			ax.plot(fitX, fitC , "m:", linewidth=2, label="$\\Delta^{"+str(round(mH,2))+"}$")
+			ax.plot(fitX, fitH , "m:", linewidth=2, label="$\\Delta^{"+str(round(mC,2))+"}$")
+			
 	plot_acco(ax, title=plotit, xlabel="$\Delta$", ylabel=ylabel)	
 	ax.set_xlim([Delta.min(),Delta.max()])
 	# ax.set_ylim(bottom=0.0)
@@ -251,8 +252,8 @@ def unpack_data(Cdatafile, Hdatafile, npoints, verbose):
 		
 	## Select relevant columns
 	## 0:time; 4:prod; 8:prod'; rest are ~energy-consuming steps
-	Cdata = Cdata[[0,4,8,10,11,12,14,15,16]]
-	Hdata = Hdata[[0,4,8,10,11,12,14,15,16]]
+	Cdata = Cdata[[0,4,8,11,12,15,16]]
+	Hdata = Hdata[[0,4,8,11,12,15,16]]
 	
 	## Prune in time
 	if Cdata.shape[1] > npoints:
