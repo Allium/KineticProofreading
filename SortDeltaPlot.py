@@ -29,7 +29,9 @@ def main():
 	t0 = time.time()
 	
 	try: argv[1]
-	except IndexError: print main.__doc__
+	except IndexError:
+		print main.__doc__
+		raise IndexError(me+"Please read docstring")
 	
 	plotfile = argv[1]+"/HopfieldDeltaPlots.png"
 	filelist = glob.glob(argv[1]+"/*.txt")

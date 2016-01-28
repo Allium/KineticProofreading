@@ -28,8 +28,11 @@ def main():
 	me = "SortTimePlot.main: "
 	t0 = time.time()
 	
-	try: argv[1]
-	except IndexError: print main.__doc__
+	try:
+		argv[1]
+	except IndexError:
+		print main.__doc__
+		raise IndexError(me+"Please read docstring")
 	
 	if os.path.isfile(argv[1]):
 		timeplot(argv[1])
