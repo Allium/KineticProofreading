@@ -14,16 +14,22 @@ def main():
 	PURPOSE
 	
 	EXECUTION
+		python SortDeltaPlot.py [dirname]
 		
 	OUTPUT
+		A single png with four subplots, saved in data directory
 	
 	EXAMPLE
+		python SortDeltaPlot.py Rsults/Sorting/
 	
 	HISTORY
 		2016/01/28	Started
 	"""
 	me = "SortDeltaPlot.main: "
 	t0 = time.time()
+	
+	try: argv[1]
+	except IndexError: print main.__doc__
 	
 	plotfile = argv[1]+"/HopfieldDeltaPlots.png"
 	filelist = glob.glob(argv[1]+"/*.txt")

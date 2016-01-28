@@ -9,24 +9,27 @@ import os, glob, time
 def main():
 	"""
 	NAME
-		SortPlot.py
+		SortTimePlot.py
 	
 	PURPOSE
 	
 	EXECUTION
-		python SortPlot.py [filename]
+		python SortTimwPlot.py [filename]
 		
 	OUTPUT
-		png plot aved in file directory
+		png plot saved in file directory
 	
 	EXAMPLE
-		python SortPlot.py Results/Sorting/Hopfield_10_.txt
+		python SortTimePlot.py Results/Sorting/Hopfield_10_.txt
 	
 	HISTORY
 		2016/01/28	Started
 	"""
-	me = "SortPlot.main: "
+	me = "SortTimePlot.main: "
 	t0 = time.time()
+	
+	try: argv[1]
+	except IndexError: print main.__doc__
 	
 	if os.path.isfile(argv[1]):
 		timeplot(argv[1])
@@ -43,7 +46,7 @@ def main():
 def timeplot(datafile):
 	"""
 	"""
-	me = "SortPlot.timeplot: "
+	me = "SortTimePlot.timeplot: "
 	
 	plotfile = datafile[:-4]+".png"
 	Delta = findpars(datafile)
