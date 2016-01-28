@@ -14,12 +14,16 @@ def main():
 	PURPOSE
 	
 	EXECUTION
-	
+		python SortPlot.py [filename]
+		
 	OUTPUT
+		png plot aved in file directory
 	
 	EXAMPLE
+		python SortPlot.py Results/Sorting/Hopfield_10_.txt
 	
 	HISTORY
+		2016/01/28	Started
 	"""
 	me = "SortPlot.main: "
 	t0 = time.time()
@@ -27,7 +31,7 @@ def main():
 	if os.path.isfile(argv[1]):
 		timeplot(argv[1])
 	elif os.path.isdir(argv[1]):
-		dirplot(argv[1])
+		plotall(argv[1])
 	else:
 		raise IOError("Input not a file or directory.")
 	
@@ -49,24 +53,43 @@ def timeplot(datafile):
 	data = data[:, ::int(data.shape[1]/npts)]
 	
 	t, ent, work, tran = data
+	Dent, SSidx = flatline(ent, Delta)
+	
+	##-------------------------------------------------------------------------
+	## Find average work rate and final entropy value
+	## Assuming entropy is flat and work is linear
+	
+	S_fin = np.mean(ent[SSidx:])
+	Wdot_evo = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
+	Wdot_SS = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
+	annotext = "$\Delta S = %.2e$ \n $\dot W_{evo} = %.2e$ \n $\dot W_{SS} = %.2e$ \n $t_{SS} =  %.2e$"\
+		% (S_fin, Wdot_evo, Wdot_SS, t[SSidx])
+	
+	##-------------------------------------------------------------------------
+	## Plotting
+	
+	plt.clf()
 	
 	plt.plot(t, ent, "-", label="$S$")
 	plt.plot(t, work, "-", label="$W$")
 
-	SSidx = flatline(ent)
-	print SSidx, t[SSidx]
-	plt.axvspan(t[0], t[SSidx-int(npts/10)],color="y",alpha=0.2)
-	plt.axvspan(t[SSidx+int(npts/10)],t[-1],color="g",alpha=0.2)
+	plt.plot(t, 100*Dent, "--", label="$100\dot S$")
+	plt.plot(t, 100*gaussian_filter1d(work,len(work)/100,order=1), "--", label="$100\dot W$")
+	
+	plt.vlines([t[SSidx-int(npts/20)],t[SSidx]],-4000, 500)
+	plt.axvspan(t[0],t[SSidx-int(npts/20)], color="y",alpha=0.05)
+	plt.axvspan(t[SSidx],t[-1], color="g",alpha=0.05)
 	
 	plt.ylim([-4000,500])
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
 	plt.legend()
+	plt.annotate(annotext,xy=(0.15,0.2),xycoords="figure fraction",fontsize=16)
 	plt.grid()
 	
-	plt.show()
-	# plt.savefig(plotfile)
+	plt.savefig(plotfile)
 	print me+"Plot saved to",plotfile
+	# plt.show()
 	
 	return
 	
@@ -79,23 +102,22 @@ def findpars(filename):
 
 ##=============================================================================
 
-def flatline(y):
+def flatline(y,D):
 	"""
 	Iterates though array y and returns the index of first instance cloe to zero
 	"""
-	y_conv = gaussian_filter1d(y,10,order=1)
-	print y.shape, y_conv.shape
-	print y_conv<-1e-5; exit()
+	fac = 2 if D <=2.5 else 5
+	y_conv = gaussian_filter1d(y,len(y)/200,order=1)
 	for id, el in enumerate(y_conv):
-		if el<-1e-5:
-			return id
-	return None
+		if abs(el)<2e-1 and id>len(y_conv)/fac:
+			break
+	return (y_conv, id)
 
 
 ##=============================================================================
 
-def plotall(dir):
-	for datafile in glob.glob(dir+"/*.txt"):
+def plotall():
+	for datafile in glob.glob(argv[1]+"/*.txt"):
 		timeplot(datafile)
 	return
 

@@ -171,7 +171,7 @@ public class Ent {
 			//Loop through Time and output line by line
 			for (t = 0; t <= timeMax; t++) {
 				
-				if ( t%(timeMax/100)==0 ){
+				if ( t%(timeMax/1000)==0 ){
 					outputStream.print(t);
 					outputStream.print("\t");
 	//				outputStream.print(A1);
