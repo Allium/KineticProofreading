@@ -64,6 +64,7 @@ def timeplot(datafile):
 	
 	ent /= N*np.log(2)	
 	Dent, SSidx = flatline(ent, N, Delta)
+	work /= np.abs(work[-1])
 	
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
@@ -80,11 +81,15 @@ def timeplot(datafile):
 	
 	plt.clf()
 	
-	plt.plot(t, ent, "-", label="$S$")
-	plt.plot(t, work, "-", label="$W$")
+	plt.plot(t, ent, "b-", label="$S / N\ln2$")
+	plt.plot(t, work, "g-", label="$W$")
 
-	plt.plot(t, 10*Dent, "--", label="$100\dot S$")
-	plt.plot(t, 10*gaussian_filter1d(work,len(work)/100,order=1), "--", label="$100\dot W$")
+	plt.axhline(y=SSS_theo(Delta),color="b",linestyle=":",linewidth=2, label="Hopfield")
+	# plt.hlines(SSS_theo(Delta),t[0],t[-1],color="b",ls=":",linewidth=4)
+	
+	# mfac = 1
+	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
+	# plt.plot(t, mfac*gaussian_filter1d(work,len(work)/100,order=1), "g--", label="$%.0f\dot W$"%mfac)
 	
 	plt.vlines([t[SSidx-int(npts/20)],t[SSidx]],-2,1)
 	plt.axvspan(t[0],t[SSidx-int(npts/20)], color="y",alpha=0.05)
@@ -115,6 +120,17 @@ def flatline(y,N,D):
 		if abs(el)<0.2/N and id>len(y_conv)/fac:
 			break
 	return (y_conv, id)
+
+##=============================================================================
+
+def SSS_theo(D):
+	"""
+	Prediction for the SS entropy.
+	Assumes a single Delta. See notes 24/01/2015.
+	Normalised to be -1 when complete segregation (D high)
+	"""
+	DS = ( np.log(1+D*D) - D*D/(1+D*D)*np.log(D*D) - np.log(2) ) / np.log(2)
+	return DS
 
 ##=============================================================================
 
