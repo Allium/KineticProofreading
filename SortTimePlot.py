@@ -55,11 +55,15 @@ def timeplot(datafile):
 	Delta = findpars(datafile)
 	
 	npts = 500
-	data = np.loadtxt(datafile, skiprows=4, unpack=True)
+	data = np.loadtxt(datafile, skiprows=10, unpack=True)
 	data = data[:, ::int(data.shape[1]/npts)]
 	
-	t, ent, work, tran = data
-	Dent, SSidx = flatline(ent, Delta)
+	t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
+	N = int(data[[1,2,3,4],0].sum())
+	del data
+	
+	ent /= N*np.log(2)	
+	Dent, SSidx = flatline(ent, N, Delta)
 	
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
@@ -79,14 +83,14 @@ def timeplot(datafile):
 	plt.plot(t, ent, "-", label="$S$")
 	plt.plot(t, work, "-", label="$W$")
 
-	plt.plot(t, 100*Dent, "--", label="$100\dot S$")
-	plt.plot(t, 100*gaussian_filter1d(work,len(work)/100,order=1), "--", label="$100\dot W$")
+	plt.plot(t, 10*Dent, "--", label="$100\dot S$")
+	plt.plot(t, 10*gaussian_filter1d(work,len(work)/100,order=1), "--", label="$100\dot W$")
 	
-	plt.vlines([t[SSidx-int(npts/20)],t[SSidx]],-4000, 500)
+	plt.vlines([t[SSidx-int(npts/20)],t[SSidx]],-2,1)
 	plt.axvspan(t[0],t[SSidx-int(npts/20)], color="y",alpha=0.05)
 	plt.axvspan(t[SSidx],t[-1], color="g",alpha=0.05)
 	
-	plt.ylim([-4000,500])
+	plt.ylim([-1.1,0.1])
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
 	plt.legend()
@@ -101,31 +105,54 @@ def timeplot(datafile):
 	
 ##=============================================================================
 
+def flatline(y,N,D):
+	"""
+	Iterates though array y and returns the index of first instance cloe to zero
+	"""
+	fac = 20#2 if D <=2.5 else 5
+	y_conv = gaussian_filter1d(y,len(y)/200,order=1)
+	for id, el in enumerate(y_conv):
+		if abs(el)<0.2/N and id>len(y_conv)/fac:
+			break
+	return (y_conv, id)
+
+##=============================================================================
+
+def plotall(dirpath):
+	for datafile in glob.glob(dirpath+"/*.txt"):
+		timeplot(datafile)
+	return
+
+##=============================================================================
+
 def findpars(filename):
 	start = filename.find("_") + 1
 	Delta = float(filename[start:filename.find("_",start)])
 	return Delta
-
-##=============================================================================
-
-def flatline(y,D):
+	
+def read_header(datafile):
 	"""
-	Iterates though array y and returns the index of first instance cloe to zero
+	Read header info from datafile.
 	"""
-	fac = 2 if D <=2.5 else 5
-	y_conv = gaussian_filter1d(y,len(y)/200,order=1)
-	for id, el in enumerate(y_conv):
-		if abs(el)<2e-1 and id>len(y_conv)/fac:
-			break
-	return (y_conv, id)
-
-
-##=============================================================================
-
-def plotall():
-	for datafile in glob.glob(argv[1]+"/*.txt"):
-		timeplot(datafile)
-	return
+	head = []
+	f = open(datafile,'r')
+	for i,line in enumerate(fh):
+		if i is 10: break
+		head += [line]
+	f.close()
+	return head
+	
+def get_headinfo(datafile):
+	"""
+	Hard-coded function to extract initial number and rates from header string.
+	Better to use a dict but I can't be bothered.
+	"""
+	head = read_header(datafile)
+	k_labels = head[3]
+	k_values = np.fromstring(head[4], dtype=float, sep='\t')
+	kp_labels = head[6]
+	kp_values = np.fromstring(head[7], dtype=float, sep='\t')
+	return [k_values, kp_values]
 
 ##=============================================================================
 ##=============================================================================
