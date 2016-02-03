@@ -14,13 +14,16 @@ def main():
 	PURPOSE
 	
 	EXECUTION
-		python SortTimwPlot.py [filename]
+		python SortTimePlot.py [filename]
 		
 	OUTPUT
 		png plot saved in file directory
 	
 	EXAMPLE
 		python SortTimePlot.py Results/Sorting/Hopfield_10_.txt
+	
+	BUGS
+		get_headinfo parsing
 	
 	HISTORY
 		2016/01/28	Started
@@ -52,7 +55,7 @@ def timeplot(datafile):
 	me = "SortTimePlot.timeplot: "
 	
 	plotfile = datafile[:-4]+".png"
-	Delta = findpars(datafile)
+	Delta = get_pars(datafile)
 	
 	npts = 500
 	data = np.loadtxt(datafile, skiprows=10, unpack=True)
@@ -64,7 +67,6 @@ def timeplot(datafile):
 	
 	ent /= N*np.log(2)	
 	Dent, SSidx = flatline(ent, N, Delta)
-	work /= np.abs(work[-1])
 	
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
@@ -82,10 +84,9 @@ def timeplot(datafile):
 	plt.clf()
 	
 	plt.plot(t, ent, "b-", label="$S / N\ln2$")
-	plt.plot(t, work, "g-", label="$W$")
+	plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
 	plt.axhline(y=SSS_theo(Delta),color="b",linestyle=":",linewidth=2, label="Hopfield")
-	# plt.hlines(SSS_theo(Delta),t[0],t[-1],color="b",ls=":",linewidth=4)
 	
 	# mfac = 1
 	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
@@ -129,9 +130,29 @@ def SSS_theo(D):
 	Assumes a single Delta. See notes 24/01/2015.
 	Normalised to be -1 when complete segregation (D high)
 	"""
-	DS = ( np.log(1+D*D) - D*D/(1+D*D)*np.log(D*D) - np.log(2) ) / np.log(2)
-	return DS
+	return ( np.log(1+D*D) - D*D/(1+D*D)*np.log(D*D) - np.log(2) ) / np.log(2)
 
+	
+def SSW_theo(k,D):
+	"""
+	Prediction for the SS work RATE.
+	Assumes a single value of D and everything else is the same between networks.
+	Note A "wants" to be in box 2.
+	Unnormalised at the moment.
+	"""
+	me = "SortTimePlot.SSW_theo: "
+	A2_ss = D*D/(1+D*D)
+	try:
+		C_ss = A2_ss * k["A1B1"]*k["B1C1"] /\
+			( k["B1C1"]*(k["C1A2"]+k["C1A1"]*D) +\
+			  k["B1A1"]*D*(k["C1B1"]+k["C1A2"]+k["C1A1"]*D) +\
+			  A2_ss*k["A1B1"]*(k["B1C1"]+k["C1B1"]+k["C1A2"]+k["C1A1"]*D) )
+		return C_ss*(2*k["C1A2"]+(1+D)*k["C1A1"])
+	except TypeError:
+		return A2_ss / ( 1+3*D+D*D+A1_ss*(3+D) )
+	except KeyError:
+		raise KeyError(me+"Check k-values in file header.")
+	
 ##=============================================================================
 
 def plotall(dirpath):
@@ -141,7 +162,7 @@ def plotall(dirpath):
 
 ##=============================================================================
 
-def findpars(filename):
+def get_pars(filename):
 	start = filename.find("_") + 1
 	Delta = float(filename[start:filename.find("_",start)])
 	return Delta
@@ -152,7 +173,7 @@ def read_header(datafile):
 	"""
 	head = []
 	f = open(datafile,'r')
-	for i,line in enumerate(fh):
+	for i,line in enumerate(f):
 		if i is 10: break
 		head += [line]
 	f.close()
@@ -161,14 +182,14 @@ def read_header(datafile):
 def get_headinfo(datafile):
 	"""
 	Hard-coded function to extract initial number and rates from header string.
-	Better to use a dict but I can't be bothered.
+	There is a bug here in the parsing -- sometimes misses an entry.
 	"""
 	head = read_header(datafile)
-	k_labels = head[3]
-	k_values = np.fromstring(head[4], dtype=float, sep='\t')
-	kp_labels = head[6]
-	kp_values = np.fromstring(head[7], dtype=float, sep='\t')
-	return [k_values, kp_values]
+	k_labels = [i for i in head[3].split("\t")] + [j for j in head[4].split("\t")]
+	k_values = np.concatenate([np.fromstring(head[4],dtype=float,sep="\t"),
+		np.fromstring(head[7],dtype=float,sep="\t")])
+	k_dict = dict((label,k_values[i]) for i,label in enumerate(k_labels))
+	return k_dict
 
 ##=============================================================================
 ##=============================================================================

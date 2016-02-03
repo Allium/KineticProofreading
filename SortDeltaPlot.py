@@ -3,7 +3,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sys import argv
 import os, glob, time
-from SortPlot import flatline, findpars
+from SortTimePlot import get_pars, get_headinfo,\
+	flatline, SSS_theo, SSW_theo
 
 ##=============================================================================
 def main():
@@ -34,63 +35,97 @@ def main():
 		raise IndexError(me+"Please read docstring")
 	
 	plotfile = argv[1]+"/HopfieldDeltaPlots.png"
+
+	##-------------------------------------------------------------------------
+
 	filelist = glob.glob(argv[1]+"/*.txt")
 	numfiles = len(filelist)
 	
 	Delta = np.zeros(numfiles)
 	S_fin = np.zeros(numfiles)
-	Wdot_evo = np.zeros(numfiles)
-	Wdot_SS = np.zeros(numfiles)
 	t_SS = np.zeros(numfiles)
+	Wdot_srt = np.zeros(numfiles)
+	Wdot_SS = np.zeros(numfiles)
 	
 	for i, datafile in enumerate(filelist):
 	
-		Delta[i] = findpars(datafile)
+		Delta[i] = get_pars(datafile)
 	
 		npts = 500
-		data = np.loadtxt(datafile, skiprows=4, unpack=True)
+		data = np.loadtxt(datafile, skiprows=10, unpack=True)
 		data = data[:, ::int(data.shape[1]/npts)]
 		
-		t, ent, work, tran = data
-		Dent, SSidx = flatline(ent, Delta[i])
+		t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
+		N = int(data[[1,2,3,4],0].sum())
+		del data
+		
+		ent /= N*np.log(2)	
+		Dent, SSidx = flatline(ent, N, Delta)
 		
 		## Assuming entropy is flat and work is linear
 		
 		S_fin[i] = np.mean(ent[SSidx:])
-		Wdot_evo[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
-		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
 		t_SS[i] = t[SSidx]
-
+		Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
+		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
+	
+	## Sort by Delta
 	sortind = np.argsort(Delta)
 	Delta = Delta[sortind]
 	S_fin = S_fin[sortind]
-	Wdot_evo = Wdot_evo[sortind]
-	Wdot_SS = Wdot_SS[sortind]
 	t_SS = t_SS[sortind]
+	Wdot_srt = Wdot_srt[sortind]
+	Wdot_SS = Wdot_SS[sortind]
 	
-	fig, ax = plt.subplots(2,2)
-	ax[0,0].plot(Delta, S_fin, "o")
-	ax[0,0].set_xlabel("$\Delta$")
-	ax[0,0].set_ylabel("$S_{final}$")
-	ax[0,0].grid()
+	## Get k values, assuming the same for all files in directory
+	k = get_headinfo(datafile)
 	
-	ax[0,1].plot(Delta, Wdot_evo, "o")
-	ax[0,1].set_xlabel("$\Delta$")	
-	ax[0,1].set_ylabel("$\dot W_{evo}$")
-	ax[0,1].grid()
-	ax[0,1].yaxis.major.formatter.set_powerlimits((0,0)) 
+	##-------------------------------------------------------------------------
+	## Plotting
 	
-	ax[1,0].plot(Delta, Wdot_SS, "o")
-	ax[1,0].set_xlabel("$\Delta$")	
-	ax[1,0].set_ylabel("$\dot W_{SS}$")
-	ax[1,0].grid()
-	ax[1,0].yaxis.major.formatter.set_powerlimits((0,0))
+	fig, axs = plt.subplots(3,2, sharex=True)
 	
-	ax[1,1].plot(Delta, t_SS,"o")	
-	ax[1,1].set_xlabel("$\Delta$")
-	ax[1,1].set_ylabel("$t_{SS}$")
-	ax[1,1].grid()
-	ax[1,1].yaxis.major.formatter.set_powerlimits((0,0)) 
+	ax = axs[0,0]
+	ax.plot(Delta, S_fin, "o")
+	ax.plot(Delta, SSS_theo(Delta), color=ax.lines[-1].get_color(), ls="--",\
+		label="Theory")
+	# ax.set_xlabel("$\Delta$")
+	ax.set_ylabel("$S_{\mathrm{final}}$")
+	ax.grid()
+	
+	ax = axs[0,1]
+	ax.plot(Delta, t_SS, "o")	
+	# ax.set_xlabel("$\Delta$")
+	ax.set_ylabel("$t_{\mathrm{SS}}$")
+	ax.grid()
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+		
+	ax = axs[1,0]
+	ax.plot(Delta, Wdot_srt, "o")
+	# ax.set_xlabel("$\Delta$")	
+	ax.set_ylabel("$\dot W_{\mathrm{sort}}$")
+	ax.grid()
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	
+	ax = axs[1,1]
+	ax.plot(Delta, t_SS*Wdot_srt, "o")
+	# ax.set_xlabel("$\Delta$")
+	ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
+	ax.grid()
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	
+	ax = axs[2,0]
+	ax.plot(Delta, Wdot_SS, "o")
+	ax.plot(Delta, -SSW_theo(k,Delta), color=ax.lines[-1].get_color(), ls="--",\
+		label="Theory")
+	ax.set_xlabel("$\Delta$")	
+	ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
+	ax.grid()
+	ax.yaxis.major.formatter.set_powerlimits((0,0))
+	
+	ax = axs[2,1]
+	ax.plot(Delta, np.zeros(len(Delta)), ".")
+	ax.set_xlabel("$\Delta$")	
 	
 	fig.suptitle("Hopfield")
 	plt.tight_layout()

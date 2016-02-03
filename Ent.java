@@ -17,7 +17,7 @@ public class Ent {
 		
 		//Command Line delta input
 		double delta1 = Double.parseDouble(args[0]);
-		double delta2 = 1/delta1;
+		double delta2 = 1;//1/delta1;
 		
 		//Default hopfield is on
 		double hopfield = 1;
