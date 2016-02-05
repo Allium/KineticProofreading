@@ -90,7 +90,7 @@ def main():
 	ax.plot(Delta, SSS_theo(Delta), color=ax.lines[-1].get_color(), ls="--",\
 		label="Theory")
 	# ax.set_xlabel("$\Delta$")
-	ax.set_ylabel("$S_{\mathrm{final}}$")
+	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 	ax.grid()
 	
 	ax = axs[0,1]

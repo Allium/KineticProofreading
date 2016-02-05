@@ -96,6 +96,7 @@ def timeplot(datafile):
 	plt.axvspan(t[0],t[SSidx-int(npts/20)], color="y",alpha=0.05)
 	plt.axvspan(t[SSidx],t[-1], color="g",alpha=0.05)
 	
+	plt.xlim(left=0.0)
 	plt.ylim([-1.1,0.1])
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
