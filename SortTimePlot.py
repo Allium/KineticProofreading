@@ -149,7 +149,7 @@ def SSW_theo(k,D):
 			  A2_ss*k["A1B1"]*(k["B1C1"]+k["C1B1"]+k["C1A2"]+k["C1A1"]*D) )
 		return C_ss*(2*k["C1A2"]+(1+D)*k["C1A1"])
 	except TypeError:
-		return A2_ss / ( 1+3*D+D*D+A1_ss*(3+D) )
+		return A2_ss * (3+D) / ( 1+3*D+D*D+A1_ss*(3+D) )
 	except KeyError:
 		raise KeyError(me+"Check k-values in file header.")
 	
