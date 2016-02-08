@@ -123,7 +123,7 @@ def main():
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 			
 		ax = axs[1,0]
-		ax.plot(Delta[i], Wdot_srt[i], colour[i]+"o")
+		ax.plot(Delta[i,1:], Wdot_srt[i,1:], colour[i]+"o")
 		ax.set_ylabel("$\dot W_{\mathrm{sort}}$")
 		ax.grid()
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
@@ -147,8 +147,9 @@ def main():
 		ax.plot(Delta[i], np.zeros(len(Delta[i])), ".")
 		ax.set_xlabel("$\Delta$")	
 	
-	# fig.suptitle("Hopfield and Notfield")
+	fig.suptitle("Hopfield blue; Notfield red")
 	plt.tight_layout()
+	plt.subplots_adjust(top=0.9)
 	
 	plt.savefig(plotfile)
 	print me+"Plot saved to",plotfile
