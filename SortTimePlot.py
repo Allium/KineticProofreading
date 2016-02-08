@@ -52,7 +52,7 @@ def main():
 def timeplot(datafile):
 	"""
 	"""
-	me = "SortTimePlot.timeplot: "
+	me = "SortTimePlot.timeplot: "	
 	
 	plotfile = datafile[:-4]+".png"
 	Delta = get_pars(datafile)
@@ -127,22 +127,24 @@ def flatline(y,N,D):
 
 def SSS_theo(D):
 	"""
-	Prediction for the SS entropy.
+	Prediction for the SS entropy in equilibrium.
+	For Hopfield D->D^2.
 	Assumes a single Delta. See notes 24/01/2015.
 	Normalised to be -1 when complete segregation (D high)
 	"""
-	return ( np.log(1+D*D) - D*D/(1+D*D)*np.log(D*D) - np.log(2) ) / np.log(2)
+	return ( np.log(1+D) - D/(1+D)*np.log(D) - np.log(2) ) / np.log(2)
 
 	
-def SSW_theo(k,D):
+def SSW_theo(k,D,i):
 	"""
 	Prediction for the SS work RATE.
+	i=0: Hopfield; i=1: notfield.
 	Assumes a single value of D and everything else is the same between networks.
 	Note A "wants" to be in box 2.
 	Unnormalised at the moment.
 	"""
 	me = "SortTimePlot.SSW_theo: "
-	A2_ss = D*D/(1+D*D)
+	A2_ss = D*D/(1+D*D) if i==0 else D/(1+D)
 	try:
 		C_ss = A2_ss * k["A1B1"]*k["B1C1"] /\
 			( k["B1C1"]*(k["C1A2"]+k["C1A1"]*D) +\
@@ -152,7 +154,7 @@ def SSW_theo(k,D):
 	except TypeError:
 		return A2_ss * (3+D) / ( 1+3*D+D*D+A1_ss*(3+D) )
 	except KeyError:
-		raise KeyError(me+"Check k-values in file header.")
+		raise KeyError(me+"Check k-values in file header.\n"+k.tostring())
 	
 ##=============================================================================
 
