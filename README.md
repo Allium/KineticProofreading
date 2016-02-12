@@ -18,6 +18,6 @@ The sorting process consumes energy, and this is one thing we are interested in 
 
 ## The Particles
 
-The two species of particles differ in their unbinding rates by a factor &Delta; = Exp[-&Delta F/T].
+The two species of particles differ in their unbinding rates by a factor &Delta; = Exp[-&Delta; F/T].
 
 ## More coming...
