@@ -65,18 +65,18 @@ def timeplot(datafile):
 	N = int(data[[1,2,3,4],0].sum())
 	del data
 	
-	ent /= N*np.log(2)	
-	Dent, SSidx = flatline(ent, N, Delta)
-	
+	ent /= N*np.log(2)
+	Dent, Sssid = flatline(ent,  N, Delta)
+		
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
 	## Assuming entropy is flat and work is linear
 	
-	S_fin = np.mean(ent[SSidx:])
-	Wdot_evo = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
-	Wdot_SS = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
+	S_fin = np.mean(ent[Sssid:])
+	Wdot_evo = np.mean(work[:Wssid-int(npts/20)])/t[Wssid]
+	Wdot_SS = np.mean(work[Wssid:]-work[Wssid])/(t[-1]-t[Wssid])
 	annotext = "$\Delta S = %.2e$ \n $\dot W_{evo} = %.2e$ \n $\dot W_{SS} = %.2e$ \n $t_{SS} =  %.2e$"\
-		% (S_fin, Wdot_evo, Wdot_SS, t[SSidx])
+		% (S_fin, Wdot_evo, Wdot_SS, t[Wssid])
 	
 	##-------------------------------------------------------------------------
 	## Plotting
@@ -92,9 +92,9 @@ def timeplot(datafile):
 	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
 	# plt.plot(t, mfac*gaussian_filter1d(work,len(work)/100,order=1), "g--", label="$%.0f\dot W$"%mfac)
 	
-	plt.vlines([t[SSidx-int(npts/20)],t[SSidx]],-2,1)
-	plt.axvspan(t[0],t[SSidx-int(npts/20)], color="y",alpha=0.05)
-	plt.axvspan(t[SSidx],t[-1], color="g",alpha=0.05)
+	plt.vlines([t[Wssid-int(npts/20)],t[Wssid]],-2,1)
+	plt.axvspan(t[0],t[Wssid-int(npts/20)], color="y",alpha=0.05)
+	plt.axvspan(t[Wssid],t[-1], color="g",alpha=0.05)
 	
 	plt.xlim(left=0.0)
 	plt.ylim([-1.1,0.1])
@@ -112,14 +112,16 @@ def timeplot(datafile):
 	
 ##=============================================================================
 
-def flatline(y,N,D):
+def flatline(y,N,D, order=1, kerfrac=200, eps=0.2):
 	"""
-	Iterates though array y and returns the index of first instance cloe to zero
+	Iterates though array y and returns the index of first instance cloe to zero.
+	Filter width is set as fraction of total length.
+	Note no division by time step.
 	"""
 	fac = 20#2 if D <=2.5 else 5
-	y_conv = gaussian_filter1d(y,len(y)/200,order=1)
+	y_conv = gaussian_filter1d(y,len(y)/kerfrac,order=order)
 	for id, el in enumerate(y_conv):
-		if abs(el)<0.2/N and id>len(y_conv)/fac:
+		if abs(el)<eps/N and id>len(y_conv)/fac:
 			break
 	return (y_conv, id)
 
