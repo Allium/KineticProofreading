@@ -16,6 +16,9 @@ public class Ent {
 		Calendar cal = Calendar.getInstance();
 		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.MEDIUM);
 
+		double dummyI=0;
+		double dummyC=0;
+		
 		// Command Line delta input
 		double delta1 = Double.parseDouble(args[0]);
 		double delta2 = 1;
@@ -248,6 +251,15 @@ public class Ent {
 					//Change in Incorrect/Correct
 					if (C!=0){
 						outputStream.print(I/C - ratio);
+					}
+					else if (C==0){
+						outputStream.print(0);
+					}
+					outputStream.print("\t");
+					//Change in top and bottom
+					
+					if (C!=0){
+						outputStream.print((I-dummyI)/(C - dummyC));
 					}
 					else if (C==0){
 						outputStream.print(0);
@@ -512,7 +524,8 @@ public class Ent {
 
 				//Update the incorrect/correct and the difference
 				if (t % (timeMax / 1000) == 0 && C !=0){
-					
+					dummyI = I;
+					dummyC = C;
 					sum+=(I/C - ratio);
 					ratio = I/C;
 				}
