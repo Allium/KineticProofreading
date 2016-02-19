@@ -66,18 +66,19 @@ def timeplot(datafile):
 	del data
 	
 	ent /= N*np.log(2)
-	Dent, Sssid = flatline(ent,  N, Delta)
+	Dent, Sssid = flatline(ent, N, Delta, kerfrac=100, eps=0.2)
 		
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
 	## Assuming entropy is flat and work is linear
 	
 	S_fin = np.mean(ent[Sssid:])
-	Wdot_evo = np.mean(work[:Wssid-int(npts/20)])/t[Wssid]
-	Wdot_SS = np.mean(work[Wssid:]-work[Wssid])/(t[-1]-t[Wssid])
+	Wdot_evo = np.mean(work[:Sssid-int(npts/20)])/t[Sssid]
+	Wdot_SS = np.mean(work[Sssid:]-work[Sssid])/(t[-1]-t[Sssid])
 	annotext = "$\Delta S = %.2e$ \n $\dot W_{evo} = %.2e$ \n $\dot W_{SS} = %.2e$ \n $t_{SS} =  %.2e$"\
-		% (S_fin, Wdot_evo, Wdot_SS, t[Wssid])
+		% (S_fin, Wdot_evo, Wdot_SS, t[Sssid])
 	
+	Wssid = Sssid
 	##-------------------------------------------------------------------------
 	## Plotting
 	
@@ -127,17 +128,18 @@ def flatline(y,N,D, order=1, kerfrac=200, eps=0.2):
 
 ##=============================================================================
 
-def SSS_theo(D):
+def SSS_theo(D, nu=1.0):
 	"""
 	Prediction for the SS entropy in equilibrium.
 	For Hopfield D->D^2.
 	Assumes a single Delta. See notes 24/01/2015.
 	Normalised to be -1 when complete segregation (D high)
 	"""
+	D = D**nu
 	return ( np.log(1+D) - D/(1+D)*np.log(D) - np.log(2) ) / np.log(2)
 
 	
-def SSW_theo(k,D,i):
+def SSW_theo(D,k,nu=1.0):
 	"""
 	Prediction for the SS work RATE.
 	i=0: Hopfield; i=1: notfield.
@@ -146,7 +148,8 @@ def SSW_theo(k,D,i):
 	Unnormalised at the moment.
 	"""
 	me = "SortTimePlot.SSW_theo: "
-	A2_ss = D*D/(1+D*D) if i==0 else D/(1+D)
+	# A2_ss = D*D/(1+D*D) if i==0 else D/(1+D)
+	A2_ss = D**nu/(1+D**nu)
 	try:
 		C_ss = A2_ss * k["A1B1"]*k["B1C1"] /\
 			( k["B1C1"]*(k["C1A2"]+k["C1A1"]*D) +\

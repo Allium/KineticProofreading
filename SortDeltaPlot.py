@@ -1,6 +1,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
 from sys import argv
 import os, glob, time
 from SortTimePlot import get_pars, get_headinfo,\
@@ -53,6 +54,9 @@ def main():
 	numfiles = len(filelist)
 	if numfiles%2 != 0:
 		raise IOError(me+"Expecting an even number of files (Hopfield and Notfield).")
+	## Separate by Hop and Not
+	hoplist = filelist[:numfiles/2]
+	notlist = filelist[numfiles/2:]
 	
 	Delta = np.zeros(numfiles)
 	S_fin = np.zeros(numfiles)
@@ -73,7 +77,7 @@ def main():
 		del data
 		
 		ent /= N*np.log(2)	
-		Dent, SSidx = flatline(ent, N, Delta)
+		Dent, SSidx = flatline(ent, N, Delta, kerfrac=100)
 		
 		## Assuming entropy is flat and work is linear
 		
@@ -82,18 +86,29 @@ def main():
 		Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
 	
-	## Sort by Delta and reshape to separate Hop and Not
+	## ----------------------------------------------------
+	
+	## Separate into H and N
+	newshape = (2,numfiles/2)
+	Delta = Delta.reshape(newshape)
+	S_fin = S_fin.reshape(newshape)
+	t_SS = t_SS.reshape(newshape)
+	Wdot_srt = Wdot_srt.reshape(newshape)
+	Wdot_SS  = Wdot_SS.reshape(newshape)
+	
+	## Sort by Delta
 	sortind = np.argsort(Delta)
-	newshape = [numfiles/2,2]
-	Delta = Delta[sortind].reshape(newshape).T
+	Delta = Delta[:,sortind[0]]
 	try:
 		assert np.all(Delta[0]==Delta[1])
 	except AssertionError:
 		raise IOError(me+"Check files.\n"+filelist.tostring())
-	S_fin = S_fin[sortind].reshape(newshape).T
-	t_SS = t_SS[sortind].reshape(newshape).T
-	Wdot_srt = Wdot_srt[sortind].reshape(newshape).T
-	Wdot_SS = Wdot_SS[sortind].reshape(newshape).T
+	S_fin = S_fin[:,sortind[0]]
+	t_SS = t_SS[:,sortind[0]]
+	Wdot_srt = Wdot_srt[:,sortind[0]]
+	Wdot_SS = Wdot_SS[:,sortind[0]]
+
+	## ----------------------------------------------------
 	
 	## Get k values, assuming the same for all files in directory
 	k = [get_headinfo(filelist[0]),get_headinfo(filelist[numfiles/2])]
@@ -104,15 +119,22 @@ def main():
 	## Plotting
 	
 	colour = ["b","r"]
-	D_th = np.linspace(Delta[0,0],Delta[0,-1],len(Delta)*20)
+	D_th = np.linspace(np.min(Delta),np.max(Delta),len(Delta)*20)
 	
+	fnt = 6
 	fig, axs = plt.subplots(3,2, sharex=True)
 	
+	## Loop in Hop/not
 	for i in [0,1]:
+	
 		ax = axs[0,0]
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o")
 		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
-			label="Theory")
+			label="Optimal")
+		fit = fit_SS(SSS_theo, Delta[i], S_fin[i])
+		ax.plot(fit[0],fit[1], colour[i]+":",\
+			label="Fit: "+str(round(fit[2],1)))
+		ax.legend(prop={'size':fnt})
 		ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 		ax.grid()
 		
@@ -129,15 +151,19 @@ def main():
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
 		ax = axs[1,1]
-		ax.plot(Delta[i], t_SS[i]*Wdot_srt[i], colour[i]+"o")
+		ax.plot(Delta[i,1:], t_SS[i,1:]*Wdot_srt[i,1:], colour[i]+"o")
 		ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
 		ax.grid()
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
 		ax = axs[2,0]
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o")
-		ax.plot(D_th, -SSW_theo(k[i],D_th,i), colour[i]+"--",\
-			label="Theory")
+		ax.plot(D_th, -SSW_theo(D_th,k[i],2-i), colour[i]+"--",\
+			label="Optimal")
+		# fit = fit_SS(SSW_theo, Delta[i], S_fin[i], k[i])
+		# ax.plot(fit[0],fit[1], colour[i]+":",\
+			# label="Fit: "+str(round(fit[2],1)))
+		ax.legend(loc="best",prop={'size':fnt})
 		ax.set_xlabel("$\Delta$")	
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 		ax.grid()
@@ -158,6 +184,18 @@ def main():
 	
 	return
 
+
+##=============================================================================
+	
+def fit_SS(func,x,y):
+	"""
+	Make a power-law fit to points y(x).
+	Returns new x and y coordinates on finer grid.
+	"""
+	fitfunc = lambda x,nu: func(x,nu)
+	popt, pcov = curve_fit(fitfunc, x, y)
+	X = np.linspace(np.min(x),np.max(x),5*x.size)
+	return X, fitfunc(X, *popt), popt[0]
 
 
 ##=============================================================================

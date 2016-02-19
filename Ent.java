@@ -15,6 +15,8 @@ public class Ent {
 		final long startTime = System.nanoTime();
 		Calendar cal = Calendar.getInstance();
 		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.MEDIUM);
+		
+		String dir = "Results/Sorting/";
 
 		// Command Line delta input
 		double delta1 = Double.parseDouble(args[0]);
@@ -35,11 +37,11 @@ public class Ent {
 		}
 		// ======================================Unprimed Quantities
 		int E1 = 1;
-		int A1 = 5000;
+		int A1 = 50000;
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
-		int A2 = 5000;
+		int A2 = 50000;
 		int B2 = 0;
 		int C2 = 0;
 		
@@ -47,10 +49,10 @@ public class Ent {
 		int A20 = A2;
 
 		// ======================================Primed Quantities
-		int pA1 = 5000;
+		int pA1 = 50000;
 		int pB1 = 0;
 		int pC1 = 0;
-		int pA2 = 5000;
+		int pA2 = 50000;
 		int pB2 = 0;
 		int pC2 = 0;
 		
@@ -173,7 +175,7 @@ public class Ent {
 
 		// =================================================================Generate
 		// datafile with header
-		String fileName = filekey + "_" + args[0] + "_.txt";
+		String fileName = dir + filekey + "_" + args[0] + "_.txt";
 		try {
 			PrintWriter outputStream = new PrintWriter(fileName);
 			outputStream.println(df.format(cal.getTime()));
