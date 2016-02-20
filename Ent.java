@@ -18,6 +18,8 @@ public class Ent {
 
 		double dummyI=0;
 		double dummyC=0;
+
+		double HopfieldRate = 0;
 		
 		// Command Line delta input
 		double delta1 = Double.parseDouble(args[0]);
@@ -240,7 +242,9 @@ public class Ent {
 					outputStream.print("\t");
 					outputStream.print(-1 * (xpC1A2 + xC2A1));
 					outputStream.print("\t");
-					//Incorrect / Correct
+					
+
+				//Incorrect / Correct
 					if (C==0){
 						outputStream.print(0);
 					}
@@ -248,22 +252,25 @@ public class Ent {
 						outputStream.print(I/C);
 					}
 					outputStream.print("\t");
-					//Change in Incorrect/Correct
-					if (C!=0){
-						outputStream.print(I/C - ratio);
-					}
-					else if (C==0){
-						outputStream.print(0);
-					}
-					outputStream.print("\t");
-					//Change in top and bottom
 					
-					if (C!=0){
-						outputStream.print((I-dummyI)/(C - dummyC));
-					}
-					else if (C==0){
+
+				//Change in Incorrect/Correct
+					outputStream.print((I/C - ratio)*A1/A2);
+
+					outputStream.print("\t");
+					
+				//Change in top and bottom
+					outputStream.print(HopfieldRate);
+
+					/*if (C==0 || (C-dummyC)==0 || (A2+pA1)==0){
 						outputStream.print(0);
 					}
+					
+					else if (C>0 && (C-dummyC)>0 &&(A2+pA1)>0){
+						outputStream.print(HopfieldRate);
+					}*/
+
+
 					outputStream.println();
 				}
 
@@ -532,8 +539,11 @@ public class Ent {
 				else if (C ==0){
 					ratio = 0;
 				}
-				
-				
+				if ((C-dummyC)==0)
+					HopfieldRate = 0;
+				else if ((C-dummyC > 0)){
+					HopfieldRate = (I-dummyI)*A1/A2/(C - dummyC);
+				}
 
 			}
 			outputStream.close();
