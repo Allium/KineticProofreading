@@ -539,9 +539,9 @@ public class Ent {
 				else if (C ==0){
 					ratio = 0;
 				}
-				if ((C-dummyC)==0)
-					HopfieldRate = 0;
-				else if ((C-dummyC > 0)){
+
+				
+				if ((C-dummyC > 0)){
 					HopfieldRate = (I-dummyI)*A1/A2/(C - dummyC);
 				}
 
