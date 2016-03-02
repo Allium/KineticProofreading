@@ -6,6 +6,7 @@ from sys import argv
 import os, glob, time
 from SortTimePlot import get_pars, get_headinfo,\
 	flatline, SSS_theo, SSW_theo
+from ErrorRate import errorplot
 
 ##=============================================================================
 def main():
@@ -122,6 +123,7 @@ def main():
 	D_th = np.linspace(np.min(Delta),np.max(Delta),len(Delta)*20)
 	
 	fnt = 6
+	fitxp = [0,0]
 	fig, axs = plt.subplots(3,2, sharex=True)
 	
 	## Loop in Hop/not
@@ -131,9 +133,9 @@ def main():
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o")
 		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
 			label="Optimal")
-		fit = fit_SS(SSS_theo, Delta[i], S_fin[i])
+		fit = fit_SS(SSS_theo, Delta[i], S_fin[i]); fitxp[i]=round(fit[2],1)
 		ax.plot(fit[0],fit[1], colour[i]+":",\
-			label="Fit: "+str(round(fit[2],1)))
+			label="Fit: "+str(fitxp[i]))
 		ax.legend(prop={'size':fnt})
 		ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 		ax.grid()
@@ -168,10 +170,10 @@ def main():
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 		ax.grid()
 		ax.yaxis.major.formatter.set_powerlimits((0,0))
-		
-		ax = axs[2,1]
-		ax.plot(Delta[i], np.zeros(len(Delta[i])), ".")
-		ax.set_xlabel("$\Delta$")	
+	
+	ax = axs[2,1]
+	errorplot(argv[1],ax,fitxp)
+	ax.set_xlabel("$\Delta$")		
 	
 	fig.suptitle("Hopfield blue; Notfield red")
 	plt.tight_layout()
