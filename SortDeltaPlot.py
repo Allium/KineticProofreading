@@ -62,7 +62,7 @@ def main():
 	Delta = np.zeros(numfiles)
 	S_fin = np.zeros(numfiles)
 	t_SS = np.zeros(numfiles)
-	Wdot_srt = np.zeros(numfiles)
+	W_srt = np.zeros(numfiles)
 	Wdot_SS = np.zeros(numfiles)
 	
 	## Get data from all files
@@ -84,7 +84,8 @@ def main():
 		
 		S_fin[i] = np.mean(ent[SSidx:])
 		t_SS[i] = t[SSidx]
-		Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
+		# Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
+		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
 	
 	## ----------------------------------------------------
@@ -94,7 +95,7 @@ def main():
 	Delta = Delta.reshape(newshape)
 	S_fin = S_fin.reshape(newshape)
 	t_SS = t_SS.reshape(newshape)
-	Wdot_srt = Wdot_srt.reshape(newshape)
+	W_srt = W_srt.reshape(newshape)
 	Wdot_SS  = Wdot_SS.reshape(newshape)
 	
 	## Sort by Delta
@@ -106,7 +107,7 @@ def main():
 		raise IOError(me+"Check files.\n"+filelist.tostring())
 	S_fin = S_fin[:,sortind[0]]
 	t_SS = t_SS[:,sortind[0]]
-	Wdot_srt = Wdot_srt[:,sortind[0]]
+	W_srt = W_srt[:,sortind[0]]
 	Wdot_SS = Wdot_SS[:,sortind[0]]
 
 	## ----------------------------------------------------
@@ -138,24 +139,22 @@ def main():
 			label="Fit: "+str(fitxp[i]))
 		ax.legend(prop={'size':fnt})
 		ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
-		ax.grid()
+		ax.grid(i)
 		
 		ax = axs[0,1]
 		ax.plot(Delta[i], t_SS[i], colour[i]+"o")	
 		ax.set_ylabel("$t_{\mathrm{SS}}$")
-		ax.grid()
+		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 			
 		ax = axs[1,0]
-		ax.plot(Delta[i,1:], Wdot_srt[i,1:], colour[i]+"o")
-		ax.set_ylabel("$\dot W_{\mathrm{sort}}$")
-		ax.grid()
+		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o")
+		ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
+		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
 		ax = axs[1,1]
-		ax.plot(Delta[i,1:], t_SS[i,1:]*Wdot_srt[i,1:], colour[i]+"o")
-		ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
-		ax.grid()
+		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
 		ax = axs[2,0]
@@ -168,11 +167,12 @@ def main():
 		ax.legend(loc="best",prop={'size':fnt})
 		ax.set_xlabel("$\Delta$")	
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
-		ax.grid()
+		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0))
 	
 	ax = axs[2,1]
 	errorplot(argv[1],ax,fitxp)
+	ax.set_ylim(top=1.0)
 	ax.set_xlabel("$\Delta$")		
 	
 	fig.suptitle("Hopfield blue; Notfield red")

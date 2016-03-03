@@ -1,5 +1,6 @@
 
 import numpy as np
+from scipy.signal import fftconvolve
 from scipy.ndimage.filters import gaussian_filter1d
 from matplotlib import pyplot as plt
 from sys import argv
@@ -79,6 +80,7 @@ def timeplot(datafile):
 		% (S_fin, Wdot_evo, Wdot_SS, t[Sssid])
 	
 	Wssid = Sssid
+	
 	##-------------------------------------------------------------------------
 	## Plotting
 	
@@ -87,14 +89,16 @@ def timeplot(datafile):
 	plt.plot(t, ent, "b-", label="$S / N\ln2$")
 	plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
-	plt.axhline(y=SSS_theo(Delta),color="b",linestyle=":",linewidth=2, label="Hopfield")
+	expnt = 2.0
+	if os.path.basename(datafile)[:3] == "Not": expnt = 1.0
+	plt.axhline(y=SSS_theo(Delta**expnt),color="b",linestyle=":",linewidth=2, label="Hopfield")
 	
 	# mfac = 1
 	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
 	# plt.plot(t, mfac*gaussian_filter1d(work,len(work)/100,order=1), "g--", label="$%.0f\dot W$"%mfac)
 	
-	plt.vlines([t[Wssid-int(npts/20)],t[Wssid]],-2,1)
-	plt.axvspan(t[0],t[Wssid-int(npts/20)], color="y",alpha=0.05)
+	plt.vlines([t[Wssid]],-2,1)
+	plt.axvspan(t[0],t[Wssid], color="y",alpha=0.05)
 	plt.axvspan(t[Wssid],t[-1], color="g",alpha=0.05)
 	
 	plt.xlim(left=0.0)
@@ -102,7 +106,7 @@ def timeplot(datafile):
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
 	plt.legend()
-	plt.annotate(annotext,xy=(0.15,0.2),xycoords="figure fraction",fontsize=16)
+	# plt.annotate(annotext,xy=(0.15,0.2),xycoords="figure fraction",fontsize=16)
 	plt.grid()
 	
 	plt.savefig(plotfile)
@@ -113,18 +117,27 @@ def timeplot(datafile):
 	
 ##=============================================================================
 
-def flatline(y,N,D, order=1, kerfrac=200, eps=0.2):
-	"""
-	Iterates though array y and returns the index of first instance cloe to zero.
-	Filter width is set as fraction of total length.
-	Note no division by time step.
-	"""
-	fac = 20#2 if D <=2.5 else 5
-	y_conv = gaussian_filter1d(y,len(y)/kerfrac,order=order)
-	for id, el in enumerate(y_conv):
-		if abs(el)<eps/N and id>len(y_conv)/fac:
-			break
+# def flatline(y,N,D, order=1, kerfrac=200, eps=0.2):
+	# """
+	# Iterates though array y and returns the index of first instance cloe to zero.
+	# Filter width is set as fraction of total length.
+	# Note no division by time step.
+	# """
+	# fac = 20#2 if D <=2.5 else 5
+	# y_conv = gaussian_filter1d(y,len(y)/kerfrac,order=order)
+	# for id, el in enumerate(y_conv):
+		# if abs(el)<eps/N and id>len(y_conv)/fac:
+			# break
+	# return (y_conv, id)
+	
+def flatline(y,*args,**kwargs):
+	sslvl = np.mean(y[y.size/2:])
+	win = y.size/20
+	y_conv = fftconvolve(y,np.ones(win)/win,mode="same")
+	for id, el in enumerate(y_conv-sslvl):
+		if el<0.01: break
 	return (y_conv, id)
+	
 
 ##=============================================================================
 
