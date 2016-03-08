@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 from sys import argv
 import os, glob, time
 from SortTimePlot import get_pars, get_headinfo,\
-	flatline, SSS_theo, SSW_theo
+	flatline, SSS_theo, SSW_theo, SSt_theo
 from ErrorRate import errorplot
 
 ##=============================================================================
@@ -62,6 +62,7 @@ def main():
 	Delta = np.zeros(numfiles)
 	S_fin = np.zeros(numfiles)
 	t_SS = np.zeros(numfiles)
+	t_SS_th = np.zeros(numfiles)
 	W_srt = np.zeros(numfiles)
 	Wdot_SS = np.zeros(numfiles)
 	
@@ -69,6 +70,7 @@ def main():
 	for i in range(numfiles):
 	
 		Delta[i] = get_pars(filelist[i])
+		k = get_headinfo(filelist[i])
 	
 		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
 		data = data[:, ::int(data.shape[1]/npts)]
@@ -84,6 +86,7 @@ def main():
 		
 		S_fin[i] = np.mean(ent[SSidx:])
 		t_SS[i] = t[SSidx]
+		t_SS_th[i] = SSt_theo(k)
 		# Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
@@ -95,6 +98,7 @@ def main():
 	Delta = Delta.reshape(newshape)
 	S_fin = S_fin.reshape(newshape)
 	t_SS = t_SS.reshape(newshape)
+	t_SS_th = t_SS_th.reshape(newshape)
 	W_srt = W_srt.reshape(newshape)
 	Wdot_SS  = Wdot_SS.reshape(newshape)
 	
@@ -107,6 +111,7 @@ def main():
 		raise IOError(me+"Check files.\n"+filelist.tostring())
 	S_fin = S_fin[:,sortind[0]]
 	t_SS = t_SS[:,sortind[0]]
+	t_SS_th = t_SS_th[:,sortind[0]]
 	W_srt = W_srt[:,sortind[0]]
 	Wdot_SS = Wdot_SS[:,sortind[0]]
 
@@ -135,14 +140,14 @@ def main():
 		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
 			label="Optimal")
 		fit = fit_SS(SSS_theo, Delta[i], S_fin[i]); fitxp[i]=round(fit[2],1)
-		ax.plot(fit[0],fit[1], colour[i]+":",\
-			label="Fit: "+str(fitxp[i]))
-		ax.legend(prop={'size':fnt})
+		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fitxp[i])+")")
+		# ax.legend(prop={'size':fnt})
 		ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 		ax.grid(i)
 		
 		ax = axs[0,1]
-		ax.plot(Delta[i], t_SS[i], colour[i]+"o")	
+		ax.plot(Delta[i], t_SS[i], colour[i]+"o")
+		ax.plot(Delta[i], N*t_SS_th[i], colour[i]+"--")
 		ax.set_ylabel("$t_{\mathrm{SS}}$")
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
@@ -153,10 +158,6 @@ def main():
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
-		ax = axs[1,1]
-		ax.grid(i)
-		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
-		
 		ax = axs[2,0]
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o")
 		ax.plot(D_th, -SSW_theo(D_th,k[i],2-i), colour[i]+"--",\
@@ -164,18 +165,25 @@ def main():
 		# fit = fit_SS(SSW_theo, Delta[i], S_fin[i], k[i])
 		# ax.plot(fit[0],fit[1], colour[i]+":",\
 			# label="Fit: "+str(round(fit[2],1)))
-		ax.legend(loc="best",prop={'size':fnt})
+		# ax.legend(loc="best",prop={'size':fnt})
 		ax.set_xlabel("$\Delta$")	
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0))
 	
+	ax = axs[1,1]
+	annotext = "Hopfield: BLUE\nNotfield: RED\nData: o\nTheory: --\nFit: .."
+	ax.annotate(annotext,xy=(0.65,0.425),xycoords="figure fraction")
+	plt.setp(ax.get_xticklabels(), visible=False)
+	plt.setp(ax.get_yticklabels(), visible=False)
+	
+	
 	ax = axs[2,1]
 	errorplot(argv[1],ax,fitxp)
 	ax.set_ylim(top=1.0)
-	ax.set_xlabel("$\Delta$")		
-	
-	fig.suptitle("Hopfield blue; Notfield red")
+	ax.set_xlabel("$\Delta$")
+		
+	fig.suptitle("Hopfield and Notfield Properties Versus $\\Delta$")
 	plt.tight_layout()
 	plt.subplots_adjust(top=0.9)
 	

@@ -57,6 +57,7 @@ def timeplot(datafile):
 	
 	plotfile = datafile[:-4]+".png"
 	Delta = get_pars(datafile)
+	k = get_headinfo(datafile)
 	
 	npts = 500
 	data = np.loadtxt(datafile, skiprows=10, unpack=True)
@@ -65,6 +66,7 @@ def timeplot(datafile):
 	t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
 	N = int(data[[1,2,3,4],0].sum())
 	del data
+
 	
 	ent /= N*np.log(2)
 	Dent, Sssid = flatline(ent, N, Delta, kerfrac=100, eps=0.2)
@@ -97,11 +99,13 @@ def timeplot(datafile):
 	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
 	# plt.plot(t, mfac*gaussian_filter1d(work,len(work)/100,order=1), "g--", label="$%.0f\dot W$"%mfac)
 	
+	plt.vlines(SSt_theo(k)*N,-2,1,color="r",linestyle=":",lw=2)
+	
 	plt.vlines([t[Wssid]],-2,1)
 	plt.axvspan(t[0],t[Wssid], color="y",alpha=0.05)
 	plt.axvspan(t[Wssid],t[-1], color="g",alpha=0.05)
 	
-	plt.xlim(left=0.0)
+	plt.xlim(left=0.0,right=t[-1])
 	plt.ylim([-1.1,0.1])
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
@@ -173,6 +177,16 @@ def SSW_theo(D,k,nu=1.0):
 		return A2_ss * (3+D) / ( 1+3*D+D*D+A1_ss*(3+D) )
 	except KeyError:
 		raise KeyError(me+"Check k-values in file header.\n"+k.tostring())
+
+def SSt_theo(k):
+	"""
+	See notes 26/02/2016
+	"""
+	den1 = k["C1A2"]*k["B1C1"]*k["A1B1"]
+	num1 = k["B1A1"]*(k["C1B1"]+k["C1A1"]+k["C1A2"])+k["B1C1"]*(k["C1A1"]+k["C1A2"])
+	den2 = k["C1'A2'"]*k["B1'C1'"]*k["A1'B1'"]
+	num2 = k["B1'A1'"]*(k["C1'B1'"]+k["C1'A1'"]+k["C1'A2'"])+k["B1'C1'"]*(k["C1'A1'"]+k["C1'A2'"])
+	return min(num1/den1,num2/den2)
 	
 ##=============================================================================
 
@@ -206,7 +220,7 @@ def get_headinfo(datafile):
 	There is a bug here in the parsing -- sometimes misses an entry.
 	"""
 	head = read_header(datafile)
-	k_labels = [i for i in head[3].split("\t")] + [j for j in head[4].split("\t")]
+	k_labels = [label for label in head[3].split("\t")] + [label for label in head[6].split("\t")]
 	k_values = np.concatenate([np.fromstring(head[4],dtype=float,sep="\t"),
 		np.fromstring(head[7],dtype=float,sep="\t")])
 	k_dict = dict((label,k_values[i]) for i,label in enumerate(k_labels))

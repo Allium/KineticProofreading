@@ -38,6 +38,9 @@ public class Ent {
 			hopfield = 0;
 			filekey = "Notfield";
 		}
+		filekey = "Results/Sorting/"+filekey;
+		
+		
 		// ======================================Unprimed Quantities
 		int E1 = 1;
 		int A1 = 5000;
@@ -65,33 +68,36 @@ public class Ent {
 		
 		// ======================================Rates unprimed
 		double A1B1 = .01;
-		double B1A1 = .01 * delta2;
-		double B1C1 = .01;
-		double C1B1 = .01;
-		double C1A2 = .01;
+		double B1A1 = .02 * delta2;
+		double B1C1 = .002;
+		double C1B1 = .002;
+		double C1A2 = .001;
 
 		double A2B2 = .01;
-		double B2A2 = .01 * delta1;
-		double B2C2 = .01;
-		double C2B2 = .01;
-		double C2A1 = .01;
-		double C1A1 = .01 * hopfield * delta2;
-		double C2A2 = .01 * hopfield * delta1;
+		double B2A2 = .02 * delta1;
+		double B2C2 = .002;
+		double C2B2 = .002;
+		double C2A1 = .001;
+		double C1A1 = .02 * hopfield * delta2;
+		double C2A2 = .02 * hopfield * delta1;
 
 		// ======================================Rates primed
 		double pA1B1 = A1B1;
-		double pB1A1 = .01 * delta1;
+		double pB1A1 = .02 * delta1;
 		double pB1C1 = B1C1;
 		double pC1B1 = C1B1;
 		double pC1A2 = C1A2;
 		double pA2B2 = A2B2;
-		double pB2A2 = .01 * delta2;
+		double pB2A2 = .02 * delta2;
 		double pB2C2 = B2C2;
 		double pC2B2 = C2B2;
 		double pC2A1 = C2A1;
-		double pC1A1 = .01 * hopfield * delta1;
-		double pC2A2 = .01 * hopfield * delta2;
+		double pC1A1 = .02 * hopfield * delta1;
+		double pC2A2 = .02 * hopfield * delta2;
 
+		// Timesteps
+		double timeMax = 50000 * (A1 + A2 + pA1 + pA2);
+		
 		// ======================================Count new products
 		int newE1 = 0;
 		int newE2 = 0;
@@ -108,9 +114,6 @@ public class Ent {
 		int newpB2 = 0;
 		int newpC1 = 0;
 		int newpC2 = 0;
-
-		// Timesteps
-		double timeMax = 2000* (A1 + A2 + pA1 + pA2);
 
 		// ======================================Loop Counters
 		int t = 0;

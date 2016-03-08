@@ -68,22 +68,26 @@ def errorplot(dir_name, ax=None, fits=[1.4,0.9]):
 		ax.set_title("I./C.")
 		ax.set_xlabel("$\Delta$")
 		ax.set_ylabel("Hopfield's Error Rate versus $\Delta$")
+		hlabel =  "Hopfield"
+		nlabel =  "Notfield"
 		fsl = 12
 	else:
 		ax.set_ylabel("Error Rate Ratio")
+		hlabel = None
+		nlabel = None
 		fsl = 6
 		
 		
 
 	#       plt.plot(Delta, Error, "rx-", markersize = 10, label = "0.25 Data Hopfield")
-	ax.plot(Delta, Errorb, "bo", label = "Hopfield")
+	ax.plot(Delta, Errorb, "bo", label = hlabel)
 	ax.plot(Delta, Delta**(-fits[0]), "b--", label = "$\Delta^{-"+str(fits[0])+"}$")
 
 	#        plt.plot(DeltaN, ErrorN, "bx-", markersize = 10, label = "0.25 Data Notfield")
-	ax.plot(DeltaN, ErrorNb, "ro", label = "Notfield")
+	ax.plot(DeltaN, ErrorNb, "ro", label = nlabel)
 	ax.plot(Delta, Delta**(-fits[1]), "r--", label = "$\Delta^{-"+str(fits[1])+"}$")
 
-	ax.plot(Delta, Delta**(-2), "m-", label = "Ideal $\Delta^{-2}$")
+	ax.plot(Delta, Delta**(-2), "m-", label = "$\Delta^{-2}$")
 
 	ax.set_yscale('log')
 
