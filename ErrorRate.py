@@ -76,13 +76,11 @@ def errorplot(dir_name, ax=None, fits=[1.4,0.9]):
 		
 
 	#       plt.plot(Delta, Error, "rx-", markersize = 10, label = "0.25 Data Hopfield")
-	ax.plot(Delta, Errorb, "b-", label = "Hopfield")
+	ax.plot(Delta, Errorb, "bo", label = "Hopfield")
 	ax.plot(Delta, Delta**(-fits[0]), "b--", label = "$\Delta^{-"+str(fits[0])+"}$")
 
 	#        plt.plot(DeltaN, ErrorN, "bx-", markersize = 10, label = "0.25 Data Notfield")
-	ax.plot(DeltaN, ErrorNb, "r-", label = "Notfield")
-
-	#       plt.plot(Delta, 1/(1+Delta*Delta), "b-", label = "Delta Squared")
+	ax.plot(DeltaN, ErrorNb, "ro", label = "Notfield")
 	ax.plot(Delta, Delta**(-fits[1]), "r--", label = "$\Delta^{-"+str(fits[1])+"}$")
 
 	ax.plot(Delta, Delta**(-2), "m-", label = "Ideal $\Delta^{-2}$")
