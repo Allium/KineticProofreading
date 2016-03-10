@@ -166,6 +166,7 @@ def main():
 		# ax.plot(fit[0],fit[1], colour[i]+":",\
 			# label="Fit: "+str(round(fit[2],1)))
 		# ax.legend(loc="best",prop={'size':fnt})
+		ax.set_xlim(left=1.0)
 		ax.set_xlabel("$\Delta$")	
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 		ax.grid(i)
@@ -181,6 +182,7 @@ def main():
 	ax = axs[2,1]
 	errorplot(argv[1],ax,fitxp)
 	ax.set_ylim(top=1.0)
+	ax.set_xlim(left=1.0)
 	ax.set_xlabel("$\Delta$")
 		
 	fig.suptitle("Hopfield and Notfield Properties Versus $\\Delta$")

@@ -81,13 +81,14 @@ def errorplot(dir_name, ax=None, fits=[1.4,0.9]):
 
 	#       plt.plot(Delta, Error, "rx-", markersize = 10, label = "0.25 Data Hopfield")
 	ax.plot(Delta, Errorb, "bo", label = hlabel)
-	ax.plot(Delta, Delta**(-fits[0]), "b--", label = "$\Delta^{-"+str(fits[0])+"}$")
+	ax.plot(Delta, Delta**(-fits[0]), "b:", label = "$\Delta^{-"+str(fits[0])+"}$")
+	ax.plot(Delta, Delta**(-2), "b--", label = "$\Delta^{-2}$")
 
 	#        plt.plot(DeltaN, ErrorN, "bx-", markersize = 10, label = "0.25 Data Notfield")
 	ax.plot(DeltaN, ErrorNb, "ro", label = nlabel)
-	ax.plot(Delta, Delta**(-fits[1]), "r--", label = "$\Delta^{-"+str(fits[1])+"}$")
+	ax.plot(Delta, Delta**(-fits[1]), "r:", label = "$\Delta^{-"+str(fits[1])+"}$")
+	ax.plot(Delta, Delta**(-1), "r--", label = "$\Delta^{-1}$")
 
-	ax.plot(Delta, Delta**(-2), "m-", label = "$\Delta^{-2}$")
 
 	ax.set_yscale('log')
 
