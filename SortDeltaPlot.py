@@ -139,7 +139,7 @@ def main():
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o")
 		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
 			label="Optimal")
-		fit = fit_SS(SSS_theo, Delta[i], S_fin[i]); fitxp[i]=round(fit[2],1)
+		fit = fit_SS(SSS_theo, Delta[i], S_fin[i]); fitxp[i]=round(fit[2],2)
 		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fitxp[i])+")")
 		# ax.legend(prop={'size':fnt})
 		ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
@@ -147,7 +147,7 @@ def main():
 		
 		ax = axs[0,1]
 		ax.plot(Delta[i], t_SS[i], colour[i]+"o")
-		ax.plot(Delta[i], N*t_SS_th[i], colour[i]+"--")
+		ax.plot(Delta[i,1:], N*t_SS_th[i,1:], colour[i]+"--")
 		ax.set_ylabel("$t_{\mathrm{SS}}$")
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
@@ -155,6 +155,7 @@ def main():
 		ax = axs[1,0]
 		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o")
 		ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
+		# ax.set_ylim(top=0.0,bottom=-0.5e5)
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 		
@@ -171,19 +172,20 @@ def main():
 		ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 		ax.grid(i)
 		ax.yaxis.major.formatter.set_powerlimits((0,0))
-	
-	ax = axs[1,1]
-	annotext = "Hopfield: BLUE\nNotfield: RED\nData: o\nTheory: --\nFit: .."
-	ax.annotate(annotext,xy=(0.65,0.425),xycoords="figure fraction")
-	plt.setp(ax.get_xticklabels(), visible=False)
-	plt.setp(ax.get_yticklabels(), visible=False)
-	
-	
+		
 	ax = axs[2,1]
 	errorplot(argv[1],ax,fitxp)
 	ax.set_ylim(top=1.0)
 	ax.set_xlim(left=1.0)
 	ax.set_xlabel("$\Delta$")
+	
+	## Annotations and accoutrements
+	ax = axs[1,1]
+	annotext = "Hopfield: BLUE\nNotfield: RED\nData: o\nTheory: --\nFit: .."
+	# ax.annotate(annotext,xy=(0.65,0.425),xycoords="figure fraction")
+	ax.text(2.0, 0.5, annotext, ha='left', va='center')
+	plt.setp(ax.get_xticklabels(), visible=False)
+	plt.setp(ax.get_yticklabels(), visible=False)
 		
 	fig.suptitle("Hopfield and Notfield Properties Versus $\\Delta$")
 	plt.tight_layout()
@@ -191,6 +193,17 @@ def main():
 	
 	plt.savefig(plotfile)
 	print me+"Plot saved to",plotfile
+	
+	##-------------------------------------------------------------------------
+	try:
+		assert argv[2]=="separate"
+		print me+"Making separate plots too."
+		for i,ax in enumerate(axs.flatten()):
+			extent = ax.get_tightbbox(fig.canvas.renderer).transformed(fig.dpi_scale_trans.inverted())
+			fig.savefig(plotfile[:-5]+"_"+str(i)+"_.png", bbox_inches=extent, dpi=200)
+	except (IndexError, AssertionError):
+		pass
+	##-------------------------------------------------------------------------
 	
 	print me+"Execution",round(time.time()-t0,2),"seconds."
 	
@@ -208,6 +221,11 @@ def fit_SS(func,x,y):
 	popt, pcov = curve_fit(fitfunc, x, y)
 	X = np.linspace(np.min(x),np.max(x),5*x.size)
 	return X, fitfunc(X, *popt), popt[0]
+
+
+##=============================================================================
+## PLOTS
+
 
 
 ##=============================================================================
