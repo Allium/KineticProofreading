@@ -75,7 +75,7 @@ def errorplot(dir_name, ax=None, fits=[1.4,0.9]):
 		ax.set_ylabel("Error Rate Ratio")
 		hlabel = None
 		nlabel = None
-		fsl = 6
+		fsl = 12
 		
 		
 

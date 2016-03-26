@@ -125,11 +125,107 @@ def main():
 	##-------------------------------------------------------------------------
 	## Plotting
 	
-	colour = ["b","r"]
+	fsl = 10
+	colour = ["b","r","m"]
+	label = ["Hopfield","Notfield"]
 	D_th = np.linspace(np.min(Delta),np.max(Delta),len(Delta)*20)
 	
 	fnt = 6
 	fitxp = [0,0]
+	
+	## SS ENTROPY
+	
+	plt.figure("SSS"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_1_SSS.png"
+	for i in [0,1]:
+		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
+		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
+			label="Optimal")
+		fit = fit_SS(SSS_theo, Delta[i], S_fin[i]); fitxp[i]=round(fit[2],2)
+		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fitxp[i])+")")
+	ax.set_xlim(left=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
+	plt.grid()
+	plt.legend(loc="upper right", fontsize=fsl)
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## SS ENTROPY H/N
+	
+	plt.figure("SSSR"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_2_SSSR.png"
+	S_fin_ratio = (S_fin[0]+1)/(S_fin[1]+1)
+	S_fin_th_ratio = (SSS_theo(D_th**(2)+1))/(SSS_theo(D_th)+1)	
+	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o")
+	# plt.plot(D_th, S_fin_th_ratio, colour[2]+"--",	label="Optimal")
+	## SORT OUT FIT
+	ax.set_xlim(left=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2 + 1$ ratio: H/N")
+	plt.grid()
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## TIME TO REACH STEADY STATE
+	
+	plt.figure("tSS"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_3_tSS.png"
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i], t_SS[i], colour[i]+"o", label=label[i])
+		ax.plot(Delta[i,1:], N*t_SS_th[i,1:], colour[i]+"--", label="Theory")
+	ax.set_xlim(left=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$t_{\mathrm{SS}}$")
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	plt.grid()
+	plt.legend(loc="best", fontsize=fsl)
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## TOTAL WORK TO SORT
+	
+	plt.figure("Wsort"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_4_Wsort.png"
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o", label=label[i])
+	ax.set_xlim(left=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	plt.grid()
+	plt.legend(loc="lower right", fontsize=fsl)
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## SS WORK RATE
+	
+	plt.figure("Wdot"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_5_Wdot.png"
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o", label=label[i])
+		ax.plot(D_th, -SSW_theo(D_th,k[i],2-i), colour[i]+"--",\
+			label="Theory")
+	ax.set_xlim(left=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
+	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	plt.grid()
+	plt.legend(loc="lower right", fontsize=fsl)
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## SORTING ERROR RATE RATIO
+	
+	plt.figure("ERR")
+	plotfile = argv[1]+"/DeltaPlot_0_ERR.png"
+	errorplot(argv[1],plt.gca(),fitxp)
+	plt.ylim(top=1.0)
+	plt.xlim(left=1.0)
+	plt.xlabel("$\\Delta$")
+	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	##
+	
+	"""
 	fig, axs = plt.subplots(3,2, sharex=True)
 	
 	## Loop in Hop/not
@@ -204,6 +300,9 @@ def main():
 	except (IndexError, AssertionError):
 		pass
 	##-------------------------------------------------------------------------
+	"""
+	
+	
 	
 	print me+"Execution",round(time.time()-t0,2),"seconds."
 	
@@ -221,11 +320,6 @@ def fit_SS(func,x,y):
 	popt, pcov = curve_fit(fitfunc, x, y)
 	X = np.linspace(np.min(x),np.max(x),5*x.size)
 	return X, fitfunc(X, *popt), popt[0]
-
-
-##=============================================================================
-## PLOTS
-
 
 
 ##=============================================================================
