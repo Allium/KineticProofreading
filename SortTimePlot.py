@@ -184,8 +184,12 @@ def SSt_theo(k):
 	"""
 	den1 = k["C1A2"]*k["B1C1"]*k["A1B1"]
 	num1 = k["B1A1"]*(k["C1B1"]+k["C1A1"]+k["C1A2"])+k["B1C1"]*(k["C1A1"]+k["C1A2"])
-	den2 = k["C1'A2'"]*k["B1'C1'"]*k["A1'B1'"]
-	num2 = k["B1'A1'"]*(k["C1'B1'"]+k["C1'A1'"]+k["C1'A2'"])+k["B1'C1'"]*(k["C1'A1'"]+k["C1'A2'"])
+	try:
+		den2 = k["C1'A2'"]*k["B1'C1'"]*k["A1'B1'"]
+		num2 = k["B1'A1'"]*(k["C1'B1'"]+k["C1'A1'"]+k["C1'A2'"])+k["B1'C1'"]*(k["C1'A1'"]+k["C1'A2'"])
+	except KeyError:
+		den2 = k["C1A2p"]*k["B1C1p"]*k["A1B1p"]
+		num2 = k["B1A1p"]*(k["C1B1p"]+k["C1A1p"]+k["C1A2p"])+k["B1C1p"]*(k["C1A1p"]+k["C1A2p"])
 	return min(num1/den1,num2/den2)
 	
 ##=============================================================================
