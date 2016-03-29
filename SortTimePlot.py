@@ -220,7 +220,7 @@ def get_headinfo(datafile):
 	There is a bug here in the parsing -- sometimes misses an entry.
 	"""
 	head = read_header(datafile)
-	k_labels = [label for label in head[3].split("\t")] + [label for label in head[6].split("\t")]
+	k_labels = [label.rstrip() for label in head[3].split("\t")] + [label.rstrip() for label in head[6].split("\t")]
 	k_values = np.concatenate([np.fromstring(head[4],dtype=float,sep="\t"),
 		np.fromstring(head[7],dtype=float,sep="\t")])
 	k_dict = dict((label,k_values[i]) for i,label in enumerate(k_labels))
