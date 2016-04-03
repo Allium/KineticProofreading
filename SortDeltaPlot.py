@@ -65,6 +65,7 @@ def main():
 	t_SS_th = np.zeros(numfiles)
 	W_srt = np.zeros(numfiles)
 	Wdot_SS = np.zeros(numfiles)
+	ERR = np.zeros(numfiles)
 	
 	## Get data from all files
 	for i in range(numfiles):
@@ -75,7 +76,7 @@ def main():
 		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
 		data = data[:, ::int(data.shape[1]/npts)]
 		
-		t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
+		t, ent, work, trans_C, trans_I, err = data[[0,5,6,8,9,12]]
 		N = int(data[[1,2,3,4],0].sum())
 		del data
 		
@@ -90,6 +91,7 @@ def main():
 		# Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
+		ERR[i] = err.mean()
 	
 	## ----------------------------------------------------
 	
@@ -101,6 +103,7 @@ def main():
 	t_SS_th = t_SS_th.reshape(newshape)
 	W_srt = W_srt.reshape(newshape)
 	Wdot_SS  = Wdot_SS.reshape(newshape)
+	ERR = ERR.reshape(newshape)
 	
 	## Sort by Delta
 	sortind = np.argsort(Delta)
@@ -114,6 +117,7 @@ def main():
 	t_SS_th = t_SS_th[:,sortind[0]]
 	W_srt = W_srt[:,sortind[0]]
 	Wdot_SS = Wdot_SS[:,sortind[0]]
+	ERR = ERR[:,sortind[0]]
 
 	## ----------------------------------------------------
 	
@@ -215,12 +219,19 @@ def main():
 	
 	## SORTING ERROR RATE RATIO
 	
-	plt.figure("ERR")
+	plt.figure("ERR"); ax = plt.gca()
 	plotfile = argv[1]+"/DeltaPlot_0_ERR.png"
-	errorplot(argv[1],plt.gca(),fitxp)
-	plt.ylim(top=1.0)
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
+		ax.plot(Delta, Delta**(-fitxp[i]), colour[i]+":", label = "$\Delta^{-"+str(fitxp[i])+"}$")
+		ax.plot(Delta, Delta**(-2+i), colour[i]+"--", label = "$\Delta^{-"+str(-2+i)+"}$")
+	# errorplot(argv[1],plt.gca(),fitxp)
 	plt.xlim(left=1.0)
+	plt.ylim(top=1.0)
 	plt.xlabel("$\\Delta$")
+	plt.grid()
+	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile); print me+"Plot saved to",plotfile
 	
 	##
