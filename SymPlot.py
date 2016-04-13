@@ -23,19 +23,19 @@ def main():
 	opt, args = parser.parse_args()
 	showfig = opt.showfig
 	plotall = opt.plotall
-	verbose = opt.verbose
+	vb = opt.verbose
 
 	if os.path.isfile(args[0]):
-		plot_time(args[0], verbose)
+		plot_time(args[0], vb)
 	elif os.path.isdir(args[0]) and plotall:
 		showfig = False
-		plot_time_all(args[0], verbose)
+		plot_time_all(args[0], vb)
 	elif os.path.isdir(args[0]):
-		plot_delta(args[0], verbose)
+		plot_delta(args[0], vb)
 	else:
 		raise IOError(me+"Input not a file or directory.")
 
-	print me+"Execution",round(time.time()-t0,2),"seconds."
+	if vb: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
 	
 	return
@@ -84,9 +84,8 @@ def plot_time(datafile, vb):
 	## Theory
 	plt.axhline(SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
 	plt.axvline(SSt_theo(Delta, k)*N, c="r",ls=":",lw=2, label="$\\tau$ prediction")
-	# plt.plot(t,-1+(t[-1]-t)*SSW_theo(Delta, k)/N*4, c="g",ls=":",lw=2,label="$\\dot W_{\\rm SS}$ prediction")
-	# plt.plot(t,-1+(1-t/t[-1]), c="g",ls=":",lw=2,label="$\\dot W_{\\rm SS}$ prediction")
-	plt.plot(t,-t/t[-1]+SSW_theo(Delta, k)*t[-1]/N*(t/t[-1]-1), c="g",ls=":",lw=2,label="$\\dot W_{\\rm SS}$ prediction")
+	plt.plot(t,-t/t[-1]+SSW_theo(Delta, k)*t[-1]/N*(t/t[-1]-1), c="g",ls=":",lw=2,\
+				label="$\\dot W_{\\rm SS}$ prediction")
 	
 	plt.axvline(tSS, c="k")
 	plt.axvspan(t[0],tSS,  color="y",alpha=0.05)
@@ -101,7 +100,7 @@ def plot_time(datafile, vb):
 	plt.grid()
 
 	plt.savefig(plotfile)
-	if vb:	print me+"Plot saved to",plotfile
+	if vb: print me+"Plot saved to",plotfile
 
 	return
 
@@ -139,10 +138,10 @@ def plot_delta(dirpath, vb):
 	Delta = np.zeros(numfiles)
 	S_fin = np.zeros(numfiles)
 	t_SS = np.zeros(numfiles)
-	t_SS_th = np.zeros(numfiles)
 	W_srt = np.zeros(numfiles)
 	Wdot_SS = np.zeros(numfiles)
 	ERR = np.zeros(numfiles)
+	t_SS_th = np.zeros(numfiles)
 	
 	## Get data from all files
 	for i in range(numfiles):
@@ -161,7 +160,7 @@ def plot_delta(dirpath, vb):
 		
 		## Normalise ent and find SS index
 		ent /= N*np.log(2)	
-		Dent, SSidx = flatline(ent, N, Delta, kerfrac=100)
+		Dent, SSidx = flatline(ent)
 		tSS = t[SSidx]
 		
 		## Collect data
@@ -173,7 +172,7 @@ def plot_delta(dirpath, vb):
 		ERR[i] = err.mean()
 	
 		## Construct prediction arrays
-		t_SS_th[i] = SSt_theo(D,k)
+		t_SS_th[i] = SSt_theo(Delta[i],k)
 		
 		
 	## ----------------------------------------------------
@@ -207,15 +206,14 @@ def plot_delta(dirpath, vb):
 	## Get k values, assuming the same for all files in directory
 	k = [get_headinfo(filelist[0]),get_headinfo(filelist[numfiles/2])]
 	
-	if verbose: print me+"Data extraction and calculations:",round(time.time()-t0,2),"seconds."
+	if vb: print me+"Data extraction and calculations:",round(time.time()-t0,2),"seconds."
 	
 	##-------------------------------------------------------------------------
 	## Plotting
 	
 	fsl = 10
 	colour = ["b","r","m"]
-	label = ["Hopfield","Notfield"]
-	D_th = np.linspace(np.min(Delta),np.max(Delta),len(Delta)*20)
+	label = ["Proofread","Equilibrium"]
 	
 	fitxp = [0,0]
 	
@@ -227,22 +225,23 @@ def plot_delta(dirpath, vb):
 	for i in [0,1]:
 		fit = fit_SS(ERR_theo, Delta[i], ERR[i]); fitxp[i]=round(fit[2],2)
 		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta, Delta**(-fitxp[i]), colour[i]+":", label = "$\Delta^{-"+str(fitxp[i])+"}$")
-		ax.plot(Delta, Delta**(-2+i), colour[i]+"--", label = "$\Delta^{-"+str(-2+i)+"}$")
+		ax.plot(Delta[i], Delta[i]**(-fitxp[i]), colour[i]+":", label = "$\Delta^{-"+str(fitxp[i])+"}$")
+		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{-"+str(-2+i)+"}$")
 	plt.xlim(left=1.0)
 	plt.ylim(top=1.0)
 	plt.xlabel("$\\Delta$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
-	
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
+
 	## SS ENTROPY
 	
 	plt.figure("SSS"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_1_SSS.png"
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
-		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
+		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",\
 			label="Optimal")
 		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fitxp[i])+")")
 	ax.set_xlim(left=1.0)
@@ -250,22 +249,24 @@ def plot_delta(dirpath, vb):
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
 	
 	## SS ENTROPY H/N
 	
-	plt.figure("SSSR"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
-	S_fin_ratio = (S_fin[0]+1)/(S_fin[1]+1)
-	S_fin_th_ratio = (SSS_theo(D_th**(2)+1))/(SSS_theo(D_th)+1)	
-	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o")
-	# plt.plot(D_th, S_fin_th_ratio, colour[2]+"--",	label="Optimal")
-	## SORT OUT FIT
-	ax.set_xlim(left=1.0)
-	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2 + 1$ ratio: H/N")
-	plt.grid()
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	# plt.figure("SSSR"); ax = plt.gca()
+	# plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
+	# S_fin_ratio = (S_fin[0]+1)/(S_fin[1]+1)
+	# S_fin_th_ratio = (SSS_theo(Delta, k))/(SSS_theo(D_th)+1)	
+	# ax.plot(Delta[0], S_fin_ratio, colour[2]+"o")
+	# # plt.plot(D_th, S_fin_th_ratio, colour[2]+"--",	label="Optimal")
+	# ## SORT OUT FIT
+	# ax.set_xlim(left=1.0)
+	# ax.set_xlabel("$\\Delta$")
+	# ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2 + 1$ ratio: H/N")
+	# plt.grid()
+	# plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
 	
 	## TIME TO REACH STEADY STATE
 	
@@ -281,7 +282,8 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="best", fontsize=fsl)
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
 	
 	## TOTAL WORK TO SORT
 	
@@ -296,7 +298,8 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
 	
 	## SS WORK RATE
 	
@@ -305,7 +308,7 @@ def plot_delta(dirpath, vb):
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(D_th, -SSW_theo(D_th,k[i],2-i), colour[i]+"--",\
+		ax.plot(Delta[i], -SSW_theo(Delta[i],k[i]), colour[i]+"--",\
 			label="Theory")
 	ax.set_xlim(left=1.0)
 	ax.set_xlabel("$\\Delta$")
@@ -313,12 +316,12 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
-	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
 	
 	##
 	
-	
-	print me+"Execution",round(time.time()-t0,2),"seconds."
+	if vb: print me+"Execution",round(time.time()-t0,2),"seconds."
 	
 	return
 
