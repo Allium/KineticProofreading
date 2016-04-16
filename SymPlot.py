@@ -82,7 +82,7 @@ def plot_time(datafile, vb):
 	plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
 	## Theory
-	plt.axhline(SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
+	plt.axhline(0.5*SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
 	plt.axvline(SSt_theo(Delta, k)*N, c="r",ls=":",lw=2, label="$\\tau$ prediction")
 	plt.plot(t,-t/t[-1]+SSW_theo(Delta, k)*t[-1]/N*(t/t[-1]-1), c="g",ls=":",lw=2,\
 				label="$\\dot W_{\\rm SS}$ prediction")
@@ -154,7 +154,7 @@ def plot_delta(dirpath, vb):
 		data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
-		t, ent, work, trans_C, trans_I, err = data[[0,5,6,8,9,12]]
+		t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
 		N = int(data[[1,2,3,4],0].sum())
 		del data
 		
@@ -169,7 +169,7 @@ def plot_delta(dirpath, vb):
 		t_SS[i] = tSS
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
-		ERR[i] = err.mean()
+		ERR[i] = (np.diff(trans_I).mean()/np.diff(trans_C).mean())
 	
 		## Construct prediction arrays
 		t_SS_th[i] = SSt_theo(Delta[i],k)
@@ -193,7 +193,7 @@ def plot_delta(dirpath, vb):
 	try:
 		assert np.all(Delta[0]==Delta[1])
 	except AssertionError:
-		raise IOError(me+"Check files.\n"+filelist.tostring())
+		raise IOError(me+"Files not matching:\n"+filelist.tostring())
 	S_fin = S_fin[:,sortind[0]]
 	t_SS = t_SS[:,sortind[0]]
 	t_SS_th = t_SS_th[:,sortind[0]]
@@ -216,41 +216,46 @@ def plot_delta(dirpath, vb):
 	label = ["Proofread","Equilibrium"]
 	
 	fitxp = [0,0]
-	
+	"""
 	## SORTING ERROR RATE RATIO
-	
 	plt.figure("ERR"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_0_ERR.png"
 	plt.subplot(111)
 	for i in [0,1]:
-		fit = fit_SS(ERR_theo, Delta[i], ERR[i]); fitxp[i]=round(fit[2],2)
+		fit = fit_par(ERR_fit, Delta[i], ERR[i]); fitxp[i]=round(fit[2],2)
 		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], Delta[i]**(-fitxp[i]), colour[i]+":", label = "$\Delta^{-"+str(fitxp[i])+"}$")
-		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{-"+str(-2+i)+"}$")
+		ax.plot(Delta[i], Delta[i]**(fitxp[i]), colour[i]+":", label = "$\Delta^{"+str(fit[2])+"}$")
+		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{"+str(-2+i)+"}$")
 	plt.xlim(left=1.0)
-	plt.ylim(top=1.0)
+	plt.ylim(top=1.0, bottom=0.0)
 	plt.xlabel("$\\Delta$")
+	plt.ylabel("Error Rate Ratio $\\langle\\dot I\\rangle/\\langle\\dot C\\rangle$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-
+	"""
+	
 	## SS ENTROPY
 	
 	plt.figure("SSS"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_1_SSS.png"
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",\
-			label="Optimal")
-		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fitxp[i])+")")
+		ax.plot(Delta[i], 0.5*SSS_theo(Delta[i], k[i]), colour[i]+"--",\
+			label="Predicted")
+		# ax.plot(Delta[i], SSS_fit(Delta[i],fitxp[i]), colour[i]+":", label="Fit ("+str(fitxp[i])+")")
+		fit = fit_par(SSS_fit, Delta[i], S_fin[i])
+		ax.plot(fit[0], fit[1], colour[i]+":", label="$A_{\\rm SS}=\\frac{1}{1+\\Delta^{%.2f}}$" % (fit[2]))
 	ax.set_xlim(left=1.0)
+	ax.set_ylim(top=0.0, bottom=-1.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
+	return
 	
 	## SS ENTROPY H/N
 	
@@ -348,10 +353,10 @@ def SSS_theo(D, k):
 	ba1 = k["B1A1"]
 	ca1 = k["C1A1"]
 	cb  = k["C1B1"]
-	num = ca1*cb + ba1*(ca1+cb) + ca1*ca1*D
-	den = ba1*ca1+ba1*cb+ca1*cb + (2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
+	num = (ca1*cb + ba1*ca1 + ba1*cb) + ca1*ca1*D
+	den = (ba1*cb + ba1*ca1 + ca1*cb) + (2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
 	A1SS = num/den
-	return -1.0 - ( A1SS*np.log(A1SS) + (1-A1SS)*np.log(1-A1SS) ) / np.log(2)
+	return - 1.0 - ( A1SS*np.log(A1SS) + (1-A1SS)*np.log(1-A1SS) ) / np.log(2)
 
 
 def SSW_theo(D, k):
@@ -443,7 +448,7 @@ def get_headinfo(datafile):
 	
 ##=============================================================================
 	
-def fit_SS(func,x,y):
+def fit_par(func,x,y):
 	"""
 	Make a power-law fit to points y(x).
 	Returns new x and y coordinates on finer grid.
@@ -453,8 +458,13 @@ def fit_SS(func,x,y):
 	X = np.linspace(np.min(x),np.max(x),5*x.size)
 	return X, fitfunc(X, *popt), popt[0]
 
-def ERR_theo(D,nu):
+def ERR_fit(D,nu):
 	return D**nu
+
+def SSS_fit(D,nu):
+	ASS = 1/(1+D**nu)
+	SSS = - 1.0 - (ASS*np.log(ASS) + (1-ASS)*np.log(1-ASS)) / np.log(2)
+	return SSS
 
 ##=============================================================================
 ##=============================================================================
