@@ -84,7 +84,10 @@ def plot_time(datafile, vb):
 	## Theory
 	plt.axhline(0.5*SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
 	plt.axvline(SSt_theo(Delta, k)*N, c="r",ls=":",lw=2, label="$\\tau$ prediction")
-	plt.plot(t,-t/t[-1]+SSW_theo(Delta, k)*t[-1]/N*(t/t[-1]-1), c="g",ls=":",lw=2,\
+	wgrad = SSW_theo(Delta, k)*N
+	# plt.plot(t, t/t[-1]*(-1+wgrad*t[-1]) - wgrad*t[-1], c="g",ls=":",lw=2,\
+				# label="$\\dot W_{\\rm SS}$ prediction")
+	plt.plot(t, -t/t[-1], c="g",ls=":",lw=2,\
 				label="$\\dot W_{\\rm SS}$ prediction")
 	
 	plt.axvline(tSS, c="k")
@@ -216,7 +219,7 @@ def plot_delta(dirpath, vb):
 	label = ["Proofread","Equilibrium"]
 	
 	fitxp = [0,0]
-	"""
+
 	## SORTING ERROR RATE RATIO
 	plt.figure("ERR"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_0_ERR.png"
@@ -234,7 +237,6 @@ def plot_delta(dirpath, vb):
 	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	"""
 	
 	## SS ENTROPY
 	
@@ -255,7 +257,6 @@ def plot_delta(dirpath, vb):
 	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	return
 	
 	## SS ENTROPY H/N
 	
@@ -271,7 +272,7 @@ def plot_delta(dirpath, vb):
 	# ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2 + 1$ ratio: H/N")
 	# plt.grid()
 	# plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	# if vb: print me+"Plot saved to",plotfile
 	
 	## TIME TO REACH STEADY STATE
 	
@@ -289,7 +290,7 @@ def plot_delta(dirpath, vb):
 	plt.legend(loc="best", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	
+
 	## TOTAL WORK TO SORT
 	
 	plt.figure("Wsort"); ax = plt.gca()
@@ -305,7 +306,7 @@ def plot_delta(dirpath, vb):
 	plt.legend(loc="lower right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	
+		
 	## SS WORK RATE
 	
 	plt.figure("Wdot"); ax = plt.gca()
@@ -336,11 +337,11 @@ def plot_delta(dirpath, vb):
 ##=============================================================================
 
 def flatline(y):
-	sslvl = np.mean(y[y.size/2:])
+	sslvl = np.mean(y[int(0.75*y.size):])
 	win = y.size/20
 	y_conv = fftconvolve(y,np.ones(win)/win,mode="same")
 	for id, el in enumerate(y_conv-sslvl):
-		if el<0.01: break
+		if el<0.1*np.abs(sslvl-y[0]): break
 	return (y_conv, id)
 
 ##=============================================================================
@@ -412,7 +413,9 @@ def SSt_theo(D, k):
 			\
 			a1b*ba1*ba1*ca1*ca1 * D*D*D*D
 	##
-	return num/den
+	tau = num/den
+	##
+	return np.log(10)*tau
 
 ##=============================================================================
 
