@@ -55,23 +55,13 @@ def plot_time(datafile, vb):
 	data = np.loadtxt(datafile, skiprows=10, unpack=True)
 	data = data[:, ::int(data.shape[1]/npts)]
 
-	t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
+	t, A1, work, trans_C, trans_I = data[[0,1,6,8,9]]
 	N = int(data[[1,2,3,4],0].sum())
 	del data
 
-	ent /= N*np.log(2)
-	Dent, Sssid = flatline(ent)
+	ent = calc_ent_norm(A1/(N/2.0))
+	Sssid = flatline(ent) if Delta > 1 else 0
 	tSS = t[Sssid]
-
-	##-------------------------------------------------------------------------
-	## Find average work rate and final entropy value
-	## Assuming entropy is flat and work is linear
-
-	# S_fin = np.mean(ent[Sssid:])
-	# Wdot_evo = np.mean(work[:Sssid-int(npts/20)])/t[Sssid]
-	# Wdot_SS = np.mean(work[Sssid:]-work[Sssid])/(t[-1]-t[Sssid])
-	# annotext = "$\Delta S = %.2e$ \n $\dot W_{evo} = %.2e$ \n $\dot W_{SS} = %.2e$ \n $t_{SS} =  %.2e$"\
-		# % (S_fin, Wdot_evo, Wdot_SS, t[Sssid])
 
 	##-------------------------------------------------------------------------
 	## Plotting
@@ -82,7 +72,7 @@ def plot_time(datafile, vb):
 	plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
 	## Theory
-	plt.axhline(0.5*SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
+	plt.axhline(SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
 	plt.axvline(SSt_theo(Delta, k)*N, c="r",ls=":",lw=2, label="$\\tau$ prediction")
 	wgrad = SSW_theo(Delta, k)*N
 	# plt.plot(t, t/t[-1]*(-1+wgrad*t[-1]) - wgrad*t[-1], c="g",ls=":",lw=2,\
@@ -99,7 +89,6 @@ def plot_time(datafile, vb):
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
 	plt.legend()
-	# plt.annotate(annotext,xy=(0.15,0.2),xycoords="figure fraction",fontsize=16)
 	plt.grid()
 
 	plt.savefig(plotfile)
@@ -157,13 +146,13 @@ def plot_delta(dirpath, vb):
 		data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
-		t, ent, work, trans_C, trans_I = data[[0,5,6,8,9]]
+		t, A1, work, trans_C, trans_I = data[[0,1,6,8,9]]
 		N = int(data[[1,2,3,4],0].sum())
 		del data
 		
 		## Normalise ent and find SS index
-		ent /= N*np.log(2)	
-		Dent, SSidx = flatline(ent)
+		ent = calc_ent_norm(A1/(N/2.0))
+		SSidx = flatline(ent) if Delta[i] > 1 else 0
 		tSS = t[SSidx]
 		
 		## Collect data
@@ -227,7 +216,7 @@ def plot_delta(dirpath, vb):
 	for i in [0,1]:
 		fit = fit_par(ERR_fit, Delta[i], ERR[i]); fitxp[i]=round(fit[2],2)
 		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], Delta[i]**(fitxp[i]), colour[i]+":", label = "$\Delta^{"+str(fit[2])+"}$")
+		ax.plot(Delta[i], Delta[i]**(fit[2]), colour[i]+":", label = "$\Delta^{%.2f}$" % fit[2])
 		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{"+str(-2+i)+"}$")
 	plt.xlim(left=1.0)
 	plt.ylim(top=1.0, bottom=0.0)
@@ -244,7 +233,7 @@ def plot_delta(dirpath, vb):
 	plotfile = dirpath+"/DeltaPlot_1_SSS.png"
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], 0.5*SSS_theo(Delta[i], k[i]), colour[i]+"--",\
+		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",\
 			label="Predicted")
 		# ax.plot(Delta[i], SSS_fit(Delta[i],fitxp[i]), colour[i]+":", label="Fit ("+str(fitxp[i])+")")
 		fit = fit_par(SSS_fit, Delta[i], S_fin[i])
@@ -336,13 +325,21 @@ def plot_delta(dirpath, vb):
 ##=============================================================================
 ##=============================================================================
 
+def calc_ent_norm(a):
+	"""
+	Entropy from fraction of particles in a box
+	"""
+	return - 1.0 - ( a*np.log(a) + (1-a)*np.log(1-a) ) / np.log(2)
+
+##=============================================================================
+
 def flatline(y):
 	sslvl = np.mean(y[int(0.75*y.size):])
 	win = y.size/20
 	y_conv = fftconvolve(y,np.ones(win)/win,mode="same")
 	for id, el in enumerate(y_conv-sslvl):
 		if el<0.1*np.abs(sslvl-y[0]): break
-	return (y_conv, id)
+	return id
 
 ##=============================================================================
 
