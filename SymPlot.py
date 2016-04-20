@@ -84,6 +84,7 @@ def plot_time(datafile, vb):
 	plt.axvspan(t[0],tSS,  color="y",alpha=0.05)
 	plt.axvspan(tSS,t[-1], color="g",alpha=0.05)
 
+	## Plot properties
 	plt.xlim(left=0.0,right=t[-1])
 	plt.ylim([-1.1,0.1])
 	plt.xlabel("$t$")
