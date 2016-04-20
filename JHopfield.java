@@ -22,7 +22,8 @@ public class JHopfield {
 
 		double HopfieldRate = 0;
 		
-		
+		double ERR1 = 0;
+		double ERR2 = 0;
 		
 		// Command Line delta input
 		double delta1 = Double.parseDouble(args[0]);
@@ -70,12 +71,12 @@ public class JHopfield {
 		
 		// ======================================Rates unprimed
 		double A1B1 = .04;
-		double B1A1 = .04;
-		double B1C1 = .0005;
-		double B1A2 = .002 *delta1 * hopfield;
+		double B1A1 = .005;
+		double B1C1 = .01;
+		double B1A2 = .04 *delta1 * hopfield;
 		double C1B1 = B1C1;
-		double C1A1 = .002 * hopfield;
-		double C1A2 = .04*delta1;
+		double C1A1 = .04 * hopfield;
+		double C1A2 = .005*delta1;
 		double A2C1 = .04;
 		
 		double pA1B1 = A1B1;
@@ -88,9 +89,8 @@ public class JHopfield {
 		double pA2C1 = A1B1;
 
 		// Timesteps
-		double timeMax = 20000 * (A1 + A2 + pA1 + pA2);
+		double timeMax = 2000 * (A1 + A2 + pA1 + pA2);
 
-		System.out.println(timeMax);
 		// ======================================Loop Counters
 		int t = 0;
 		int countA1 = 1;
@@ -170,7 +170,7 @@ public class JHopfield {
 			outputStream.println();
 
 			// ======================================Show T, S, W, D+D',
-			outputStream.println("Time\tA1\tA2\tA1'\tA2'\tS\t\t\tW\tProd\tCor\tInc\tError\t\t\t∆Error");
+			outputStream.println("Time\tA1\tA2\tA1'\tA2'\tS\tW\tProd\tC\tI\tA1xA2\tA2xA1\tA1'xA2'\tA2'xA1'");
 
 			// Loop through Time and output line by line
 			for (t = 0; t <= timeMax; t++) {
@@ -181,14 +181,14 @@ public class JHopfield {
 					 outputStream.print("\t");
 					 outputStream.print(A2);
 					 outputStream.print("\t");
-					 outputStream.print(A2);
+					 outputStream.print(pA1);
 					 outputStream.print("\t");
-					 outputStream.print(A1);
+					 outputStream.print(pA2);
 					 outputStream.print("\t");
 					
 					// ======================================Entropy
 					outputStream.print((S - S0));
-					outputStream.print("\t\t\t");
+					outputStream.print("\t");
 					
 					// ======================================Work
 					outputStream.print(-1 * (W));
@@ -204,8 +204,16 @@ public class JHopfield {
 					outputStream.print("\t");
 					outputStream.print(-1 * (xB1A1 + xC1A1 + xpB1A2 + xpC1A2));
 					outputStream.print("\t");
+					outputStream.print(xB1A2 + xC1A2);
+					outputStream.print("\t");
+					outputStream.print(xB1A1 + xC1A1);
+					outputStream.print("\t");
+					outputStream.print(xpB1A2 + xpC1A2);
+					outputStream.print("\t");
+					outputStream.print(xpB1A1 + xpC1A1);
 					
-
+					
+/*
 				//Incorrect / Correct
 					if (C==0){
 						outputStream.print(0);
@@ -217,14 +225,14 @@ public class JHopfield {
 					
 
 				//Change in Incorrect/Correct
-					outputStream.print((I/C - ratio)*A1/A2);
+			//		outputStream.print((I/C - ratio)*A1/A2);
 
-					outputStream.print("\t");
+			//		outputStream.print("\t");
 					
 				//Change in top and bottom
 					outputStream.print(HopfieldRate);
 
-
+*/
 					outputStream.println();
 				}
 
@@ -429,11 +437,11 @@ public class JHopfield {
 					dIdC = 0;
 				}
 
+
 				//Update the incorrect/correct and the difference
 				if (t % (timeMax / 1000) == 0 && C !=0){
 					dummyI = I;
 					dummyC = C;
-					sum+=(I/C - ratio);
 					ratio = I/C;
 				}
 				else if (C ==0){
@@ -443,6 +451,15 @@ public class JHopfield {
 				if ((C-dummyC > 0)){
 					HopfieldRate = (I-dummyI)*A1/A2/(C - dummyC);
 				}
+
+
+				if (((xB1A2 + xC1A2)/A1) > 0){ 
+					ERR1 = ( (xpC1A2 + xpB1A2) / pA1 ) / ( (xB1A2 + xC1A2) /A1 );
+}
+
+				if (((xpC1A1 + xpB1A1)/pA2) > 0){
+					ERR2 = ( (xB1A1 + xC1A1) / A2 ) / ( (xpC1A1 + xpB1A1) /pA2);
+}
 
 				
 			}
