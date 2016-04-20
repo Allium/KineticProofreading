@@ -55,7 +55,7 @@ def plot_time(datafile, vb):
 	data = np.loadtxt(datafile, skiprows=10, unpack=True)
 	data = data[:, ::int(data.shape[1]/npts)]
 
-	t, A1, work, trans_C, trans_I = data[[0,1,6,8,9]]
+	t, A1, work = data[[0,1,6]]
 	N = int(data[[1,2,3,4],0].sum())
 	del data
 
@@ -147,7 +147,7 @@ def plot_delta(dirpath, vb):
 		data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
-		t, A1, work, trans_C, trans_I = data[[0,1,6,8,9]]
+		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
 		N = int(data[[1,2,3,4],0].sum())
 		del data
 		
@@ -158,11 +158,15 @@ def plot_delta(dirpath, vb):
 		
 		## Collect data
 		## Assume entropy is flat and work is linear
+		
 		S_fin[i] = np.mean(ent[SSidx:])
 		t_SS[i] = tSS
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
-		ERR[i] = (np.diff(trans_I).mean()/np.diff(trans_C).mean())
+
+		err1 = (np.diff(Ap12)/Ap1[:-1]).mean()*(A1[:-1]/np.diff(A12)).mean()
+		err2 = (np.diff(A21)/A2[:-1]).mean()*(Ap2[:-1]/np.diff(Ap21)).mean()
+		ERR[i] = 0.5*(err1+err2)
 	
 		## Construct prediction arrays
 		t_SS_th[i] = SSt_theo(Delta[i],k)
@@ -227,7 +231,7 @@ def plot_delta(dirpath, vb):
 	plt.legend(loc="upper right", fontsize=fsl)
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	
+
 	## SS ENTROPY
 	
 	plt.figure("SSS"); ax = plt.gca()
