@@ -238,9 +238,7 @@ def plot_delta(dirpath, vb):
 	plotfile = dirpath+"/DeltaPlot_1_SSS.png"
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",\
-			label="Predicted")
-		# ax.plot(Delta[i], SSS_fit(Delta[i],fitxp[i]), colour[i]+":", label="Fit ("+str(fitxp[i])+")")
+		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",	label="Predicted")
 		fit = fit_par(SSS_fit, Delta[i], S_fin[i])
 		ax.plot(fit[0], fit[1], colour[i]+":", label="$A_{\\rm SS}=\\frac{1}{1+\\Delta^{%.2f}}$" % (fit[2]))
 	ax.set_xlim(left=1.0)
@@ -254,19 +252,22 @@ def plot_delta(dirpath, vb):
 	
 	## SS ENTROPY H/N
 	
-	# plt.figure("SSSR"); ax = plt.gca()
-	# plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
-	# S_fin_ratio = (S_fin[0]+1)/(S_fin[1]+1)
-	# S_fin_th_ratio = (SSS_theo(Delta, k))/(SSS_theo(D_th)+1)	
-	# ax.plot(Delta[0], S_fin_ratio, colour[2]+"o")
-	# # plt.plot(D_th, S_fin_th_ratio, colour[2]+"--",	label="Optimal")
-	# ## SORT OUT FIT
-	# ax.set_xlim(left=1.0)
-	# ax.set_xlabel("$\\Delta$")
-	# ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2 + 1$ ratio: H/N")
-	# plt.grid()
-	# plt.savefig(plotfile)
-	# if vb: print me+"Plot saved to",plotfile
+	plt.figure("SSSR"); ax = plt.gca()
+	plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
+	S_fin_ratio = (S_fin[1]+1)/(S_fin[0]+1)
+	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1)/(SSS_theo(Delta[0],k[0])+1)	
+	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
+	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Optimal")
+	## SORT OUT FIT
+	ax.set_xlim(left=1.0)
+	ax.set_ylim(bottom=0.0,top=1.0)
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
+					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
+	plt.grid()
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
+	return
 	
 	## TIME TO REACH STEADY STATE
 	
@@ -343,7 +344,7 @@ def flatline(y):
 	win = y.size/20
 	y_conv = fftconvolve(y,np.ones(win)/win,mode="same")
 	for id, el in enumerate(y_conv-sslvl):
-		if el<0.1*np.abs(sslvl-y[0]): break
+		if el<0.05*np.abs(sslvl-y[0]): break
 	return id
 
 ##=============================================================================
@@ -417,7 +418,7 @@ def SSt_theo(D, k):
 	##
 	tau = num/den
 	##
-	return np.log(10)*tau
+	return np.log(20)*tau
 
 ##=============================================================================
 
