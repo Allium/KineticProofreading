@@ -156,7 +156,7 @@ public class JHopfield {
 
 		// =================================================================Generate
 		// datafile with header
-		String fileName = "V2" + filekey + "_" + args[0]+ "_.txt";
+		String fileName = "Results/test/" + "V2" + filekey + "_" + args[0]+ "_.txt";
 		try {
 			PrintWriter outputStream = new PrintWriter(fileName);
 			outputStream.println(df.format(cal.getTime()));
