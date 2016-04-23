@@ -46,11 +46,11 @@ public class JHopfield {
 		
 		// ======================================Unprimed Quantities
 		int E1 = 1;
-		int A1 = 5000;
+		int A1 = 50000;
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
-		int A2 = 5000;
+		int A2 = 50000;
 		int B2 = 0;
 		int C2 = 0;
 		
@@ -58,10 +58,10 @@ public class JHopfield {
 		int A20 = A2;
 
 		// ======================================Primed Quantities
-		int pA1 = 5000;
+		int pA1 = 50000;
 		int pB1 = 0;
 		int pC1 = 0;
-		int pA2 = 5000;
+		int pA2 = 50000;
 		int pB2 = 0;
 		int pC2 = 0;
 		
@@ -70,14 +70,28 @@ public class JHopfield {
 
 		
 		// ======================================Rates unprimed
+		
 		double A1B1 = .04;
 		double B1A1 = .005;
-		double B1C1 = .01;
-		double B1A2 = .04 *delta1 * hopfield;
+		double B1C1 = .0005;
+		double B1A2 = .002 *delta1 * hopfield;
 		double C1B1 = B1C1;
-		double C1A1 = .04 * hopfield;
+		double C1A1 = .002 * hopfield;
 		double C1A2 = .005*delta1;
 		double A2C1 = .04;
+
+		
+
+		if (args[2].equalsIgnoreCase("S")) {
+			A1B1 = .04;
+			B1A1 = .005;
+			B1C1 = .01;
+			B1A2 = .04 *delta1 * hopfield;
+			C1B1 = .01;
+			C1A1 = .04 * hopfield;
+			C1A2 = .005*delta1;
+			A2C1 = .04;
+		}
 		
 		double pA1B1 = A1B1;
 		double pB1A1 = C1A2;
@@ -156,7 +170,7 @@ public class JHopfield {
 
 		// =================================================================Generate
 		// datafile with header
-		String fileName = "Results/test/" + "V2" + filekey + "_" + args[0]+ "_.txt";
+		String fileName = "V2" + filekey + "_" + args[0]+ "_.txt";
 		try {
 			PrintWriter outputStream = new PrintWriter(fileName);
 			outputStream.println(df.format(cal.getTime()));
