@@ -114,7 +114,7 @@ def plot_delta(dirpath, vb):
 		
 	## Outfile name and number of points to plot
 	plotfile = dirpath+"/DeltaPlots.png"
-	npts = 500
+	npts = 1000
 
 	##-------------------------------------------------------------------------
 
@@ -141,10 +141,9 @@ def plot_delta(dirpath, vb):
 	
 		Delta[i] = get_pars(filelist[i])
 		k = get_headinfo(filelist[i])
-	
 		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
 		## Prune
-		data = data[:, ::int(data.shape[1]/npts)]
+		if data.shape[1]>npts: data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
 		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
@@ -224,7 +223,8 @@ def plot_delta(dirpath, vb):
 		ax.plot(Delta[i], Delta[i]**(fit[2]), colour[i]+":", label = "$\Delta^{%.2f}$" % fit[2])
 		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{"+str(-2+i)+"}$")
 	plt.xlim(left=1.0)
-	plt.ylim(top=1.0, bottom=0.0)
+	# plt.ylim(top=1.0)
+	plt.xscale("log");	plt.yscale("log")
 	plt.xlabel("$\\Delta$")
 	plt.ylabel("Error Rate Ratio $\\langle\\dot I\\rangle/\\langle\\dot C\\rangle$")
 	plt.grid()
@@ -258,9 +258,8 @@ def plot_delta(dirpath, vb):
 	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1)/(SSS_theo(Delta[0],k[0])+1)	
 	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
 	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Optimal")
-	## SORT OUT FIT
 	ax.set_xlim(left=1.0)
-	ax.set_ylim(bottom=0.0,top=1.0)
+	ax.set_ylim(bottom=0.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
