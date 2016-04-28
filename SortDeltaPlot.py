@@ -159,10 +159,9 @@ def main():
 	plotfile = argv[1]+"/DeltaPlot_1_SSS.png"
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
-		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--",\
-			label="Optimal")
+		ax.plot(D_th, SSS_theo(D_th**(2-i)), colour[i]+"--", label="Optimal")
 		fit = fit_par(SSS_theo, Delta[i], S_fin[i])
-		ax.plot(fit[0],fit[1], colour[i]+":", label="Fit ("+str(fit[2])+")")
+		ax.plot(fit[0],fit[1], colour[i]+":", label="$A_{\\rm SS}=\\frac{1}{1+\\Delta^{%.2f}}$" % (fit[2]))
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
@@ -176,14 +175,14 @@ def main():
 	S_fin_ratio = (S_fin[1]+1.0)/(S_fin[0]+1.0)
 	S_fin_th_ratio = (SSS_theo(Delta[1],1)+1.0)/(SSS_theo(Delta[0],2)+1.0)	
 	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
-	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Optimal")
+	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",label="Optimal")
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
 	ax.set_ylim(bottom=0.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
 	plt.grid()
-	plt.legend(loc="best")
+	plt.legend(loc="upper left")
 	plt.savefig(plotfile)
 	print me+"Plot saved to",plotfile
 	

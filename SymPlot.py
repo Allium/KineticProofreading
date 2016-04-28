@@ -239,6 +239,7 @@ def plot_delta(dirpath, vb):
 		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",	label="Predicted")
 		fit = fit_par(SSS_fit, Delta[i], S_fin[i])
 		ax.plot(fit[0], fit[1], colour[i]+":", label="$A_{\\rm SS}=\\frac{1}{1+\\Delta^{%.2f}}$" % (fit[2]))
+	ax.plot(Delta[0],calc_ent_norm(1.0/(1.0+Delta[0]**2.0)), colour[2]+"--", label="Optimal")
 	ax.set_xlim(left=1.0)
 	ax.set_ylim(top=0.0, bottom=-1.0)
 	ax.set_xlabel("$\\Delta$")
@@ -255,13 +256,14 @@ def plot_delta(dirpath, vb):
 	S_fin_ratio = (S_fin[1]+1.0)/(S_fin[0]+1.0)
 	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1.0)/(SSS_theo(Delta[0],k[0])+1.0)	
 	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
-	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Optimal")
+	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Prediction")
 	ax.set_xlim(left=1.0)
 	ax.set_ylim(bottom=0.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
 	plt.grid()
+	plt.legend(loc="upper left")
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
 	
