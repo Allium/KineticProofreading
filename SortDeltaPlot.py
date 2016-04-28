@@ -76,19 +76,20 @@ def main():
 		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
 		data = data[:, ::int(data.shape[1]/npts)]
 		
-		t, ent, work, trans_C, trans_I, err = data[[0,5,6,8,9,12]]
 		N = int(data[[1,2,3,4],0].sum())
+		t, ent, work, trans_C, trans_I, err = data[[0,5,6,8,9,12]]
+		if Delta[i] == 1: 	work *= 0.0
+		else:				work /= np.log(Delta[i]) * N*np.log(2)
 		del data
 		
 		ent /= N*np.log(2)	
-		SSidx = flatline(ent)
+		SSidx = flatline(ent) if Delta[i] > 1 else 0
 		
 		## Assuming entropy is flat and work is linear
 		
 		S_fin[i] = np.mean(ent[SSidx:])
 		t_SS[i] = t[SSidx]
 		t_SS_th[i] = SSt_theo(k)
-		# Wdot_srt[i] = np.mean(work[:SSidx-int(npts/20)])/t[SSidx]
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-t[SSidx])
 		ERR[i] = err.mean()
@@ -233,6 +234,22 @@ def main():
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
 	plt.savefig(plotfile); print me+"Plot saved to",plotfile
+	
+	## NET COST
+	
+	plt.figure("Net"); ax = plt.gca()
+	plotfile = argv[1]+"/DeltaPlot_6_net.png"
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i], S_fin[i]+W_srt[i], colour[i]+"o", label=label[i])
+	ax.set_ylim(top=0.0)
+	ax.set_xlim(left=1.0,right=Delta[0,-1])
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("Net cost: $\\Delta S - W/T$")
+	plt.grid()
+	plt.legend(loc="lower right", fontsize=fsl)
+	plt.savefig(plotfile)
+	print me+"Plot saved to",plotfile
 		
 	##	
 	

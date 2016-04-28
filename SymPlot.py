@@ -77,11 +77,10 @@ def plot_time(datafile, vb):
 	wgrad = SSW_theo(Delta, k)*N
 	# plt.plot(t, t/t[-1]*(-1+wgrad*t[-1]) - wgrad*t[-1], c="g",ls=":",lw=2,\
 				# label="$\\dot W_{\\rm SS}$ prediction")
-	plt.plot(t, -t/t[-1], c="g",ls=":",lw=2,\
-				label="$\\dot W_{\\rm SS}$ prediction")
+	# plt.plot(t, -t/t[-1], c="g",ls=":",lw=2, label="$\\dot W_{\\rm SS}$ prediction")
 	
 	plt.axvline(tSS, c="k")
-	plt.axvspan(t[0],tSS,  color="y",alpha=0.05)
+	plt.axvspan(t[0],tSS,  color="b",alpha=0.05)
 	plt.axvspan(tSS,t[-1], color="g",alpha=0.05)
 
 	## Plot properties
@@ -146,9 +145,13 @@ def plot_delta(dirpath, vb):
 		if data.shape[1]>npts: data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
-		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
 		N = int(data[[1,2,3,4],0].sum())
+		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
 		del data
+		
+		## Normalise work
+		if Delta[i] == 1: 	work *= 0.0
+		else:				work /= np.log(Delta[i]) * N*np.log(2)
 		
 		## Normalise ent and find SS index
 		ent = calc_ent_norm(A1/(N/2.0))
@@ -210,8 +213,9 @@ def plot_delta(dirpath, vb):
 	fsl = 10
 	colour = ["b","r","m"]
 	label = ["Proofread","Equilibrium"]
-	
+
 	## SORTING ERROR RATE RATIO
+	
 	plt.figure("ERR"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_0_ERR.png"
 	plt.subplot(111)
@@ -263,7 +267,7 @@ def plot_delta(dirpath, vb):
 	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
 	plt.grid()
-	plt.legend(loc="upper left")
+	plt.legend(loc="lower right")
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
 	
@@ -291,7 +295,8 @@ def plot_delta(dirpath, vb):
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o", label=label[i])
-	ax.set_xlim(left=1.0)
+	ax.set_xlim(left=1.0,right=Delta[0,-1])
+	ax.set_ylim(top=0.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
@@ -307,12 +312,28 @@ def plot_delta(dirpath, vb):
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i], -SSW_theo(Delta[i],k[i]), colour[i]+"--",\
-			label="Theory")
-	ax.set_xlim(left=1.0)
+		ax.plot(Delta[i,1:],-SSW_theo(Delta[i,1:],k[i])/(N*np.log(2)), colour[i]+"--",label="Theory")
+	ax.set_ylim(top=0.0)
+	ax.set_xlim(left=1.0,right=Delta[0,-1])
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	plt.grid()
+	plt.legend(loc="lower right", fontsize=fsl)
+	plt.savefig(plotfile)
+	if vb: print me+"Plot saved to",plotfile
+	
+	## NET COST
+	
+	plt.figure("Net"); ax = plt.gca()
+	plotfile = dirpath+"/DeltaPlot_6_net.png"
+	plt.subplot(111)
+	for i in [0,1]:
+		ax.plot(Delta[i], S_fin[i]+W_srt[i], colour[i]+"o", label=label[i])
+	# ax.set_ylim(top=0.0)
+	ax.set_xlim(left=1.0,right=Delta[0,-1])
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("Net cost: $\\Delta S - W/T$")
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
 	plt.savefig(plotfile)

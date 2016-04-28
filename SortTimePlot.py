@@ -67,22 +67,9 @@ def timeplot(datafile):
 	N = int(data[[1,2,3,4],0].sum())
 	del data
 
-
 	ent /= N*np.log(2)
 	Sssid = flatline(ent)
-
-	##-------------------------------------------------------------------------
-	## Find average work rate and final entropy value
-	## Assuming entropy is flat and work is linear
-
-	S_fin = np.mean(ent[Sssid:])
-	Wdot_evo = np.mean(work[:Sssid-int(npts/20)])/t[Sssid]
-	Wdot_SS = np.mean(work[Sssid:]-work[Sssid])/(t[-1]-t[Sssid])
-	annotext = "$\Delta S = %.2e$ \n $\dot W_{evo} = %.2e$ \n $\dot W_{SS} = %.2e$ \n $t_{SS} =  %.2e$"\
-		% (S_fin, Wdot_evo, Wdot_SS, t[Sssid])
-
-	Wssid = Sssid
-
+	
 	##-------------------------------------------------------------------------
 	## Plotting
 
@@ -95,14 +82,10 @@ def timeplot(datafile):
 	if os.path.basename(datafile)[:3] == "Not": expnt = 1.0
 	plt.axhline(y=SSS_theo(Delta**expnt),color="b",linestyle=":",linewidth=2, label="Hopfield")
 
-	# mfac = 1
-	# plt.plot(t, mfac*Dent, "b--", label="$%.0f\dot S$"%mfac)
-	# plt.plot(t, mfac*gaussian_filter1d(work,len(work)/100,order=1), "g--", label="$%.0f\dot W$"%mfac)
-
 	plt.vlines(SSt_theo(k)*N,-2,1,color="r",linestyle=":",lw=2)
 
 	plt.vlines([t[Wssid]],-2,1)
-	plt.axvspan(t[0],t[Wssid], color="y",alpha=0.05)
+	plt.axvspan(t[0],t[Wssid], color="b",alpha=0.05)
 	plt.axvspan(t[Wssid],t[-1], color="g",alpha=0.05)
 
 	plt.xlim(left=0.0,right=t[-1])
@@ -110,12 +93,10 @@ def timeplot(datafile):
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
 	plt.legend()
-	# plt.annotate(annotext,xy=(0.15,0.2),xycoords="figure fraction",fontsize=16)
 	plt.grid()
 
 	plt.savefig(plotfile)
 	print me+"Plot saved to",plotfile
-	# plt.show()
 
 	return
 
