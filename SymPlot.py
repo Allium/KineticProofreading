@@ -211,14 +211,12 @@ def plot_delta(dirpath, vb):
 	colour = ["b","r","m"]
 	label = ["Proofread","Equilibrium"]
 	
-	fitxp = [0,0]
-
 	## SORTING ERROR RATE RATIO
 	plt.figure("ERR"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_0_ERR.png"
 	plt.subplot(111)
 	for i in [0,1]:
-		fit = fit_par(ERR_fit, Delta[i], ERR[i]); fitxp[i]=round(fit[2],2)
+		fit = fit_par(ERR_fit, Delta[i], ERR[i])
 		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
 		ax.plot(Delta[i], Delta[i]**(fit[2]), colour[i]+":", label = "$\Delta^{%.2f}$" % fit[2])
 		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{"+str(-2+i)+"}$")
@@ -254,8 +252,8 @@ def plot_delta(dirpath, vb):
 	
 	plt.figure("SSSR"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
-	S_fin_ratio = (S_fin[1]+1)/(S_fin[0]+1)
-	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1)/(SSS_theo(Delta[0],k[0])+1)	
+	S_fin_ratio = (S_fin[1]+1.0)/(S_fin[0]+1.0)
+	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1.0)/(SSS_theo(Delta[0],k[0])+1.0)	
 	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
 	ax.plot(Delta[0], S_fin_th_ratio, colour[2]+"--",	label="Optimal")
 	ax.set_xlim(left=1.0)
@@ -266,7 +264,6 @@ def plot_delta(dirpath, vb):
 	plt.grid()
 	plt.savefig(plotfile)
 	if vb: print me+"Plot saved to",plotfile
-	return
 	
 	## TIME TO REACH STEADY STATE
 	

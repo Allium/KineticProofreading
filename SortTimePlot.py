@@ -69,7 +69,7 @@ def timeplot(datafile):
 
 
 	ent /= N*np.log(2)
-	Dent, Sssid = flatline(ent, N, Delta, kerfrac=100, eps=0.2)
+	Sssid = flatline(ent)
 
 	##-------------------------------------------------------------------------
 	## Find average work rate and final entropy value
@@ -121,27 +121,13 @@ def timeplot(datafile):
 
 ##=============================================================================
 
-# def flatline(y,N,D, order=1, kerfrac=200, eps=0.2):
-	# """
-	# Iterates though array y and returns the index of first instance cloe to zero.
-	# Filter width is set as fraction of total length.
-	# Note no division by time step.
-	# """
-	# fac = 20#2 if D <=2.5 else 5
-	# y_conv = gaussian_filter1d(y,len(y)/kerfrac,order=order)
-	# for id, el in enumerate(y_conv):
-		# if abs(el)<eps/N and id>len(y_conv)/fac:
-			# break
-	# return (y_conv, id)
-
-def flatline(y,*args,**kwargs):
-	sslvl = np.mean(y[y.size/2:])
+def flatline(y):
+	sslvl = np.mean(y[int(0.75*y.size):])
 	win = y.size/20
 	y_conv = fftconvolve(y,np.ones(win)/win,mode="same")
 	for id, el in enumerate(y_conv-sslvl):
-		if el<0.01: break
-	return (y_conv, id)
-
+		if el<0.05*np.abs(sslvl-y[0]): break
+	return id
 
 ##=============================================================================
 
