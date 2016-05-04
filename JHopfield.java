@@ -92,6 +92,20 @@ public class JHopfield {
 			C1A2 = .005*delta1;
 			A2C1 = .04;
 		}
+
+		if (args[2].equalsIgnoreCase("c")){
+		//	System.out.println("Enter A1B BA1 BC CA1:");
+			
+			A1B1 = Double.parseDouble(args[3]);
+			B1A1 = Double.parseDouble(args[4]);
+			B1C1 = Double.parseDouble(args[5]);
+			C1A1 = Double.parseDouble(args[6]) * hopfield;
+			
+			C1B1 = B1C1;
+			B1A2 = C1B1 * delta1 * hopfield;
+			C1A2 = B1A1 * delta1;
+			A2C1 = A1B1;
+		}
 		
 		double pA1B1 = A1B1;
 		double pB1A1 = C1A2;
