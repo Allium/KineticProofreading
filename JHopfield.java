@@ -46,11 +46,11 @@ public class JHopfield {
 		
 		// ======================================Unprimed Quantities
 		int E1 = 1;
-		int A1 = 50000;
+		int A1 = 5000;
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
-		int A2 = 50000;
+		int A2 = A1;
 		int B2 = 0;
 		int C2 = 0;
 		
@@ -58,10 +58,10 @@ public class JHopfield {
 		int A20 = A2;
 
 		// ======================================Primed Quantities
-		int pA1 = 50000;
+		int pA1 = A1;
 		int pB1 = 0;
 		int pC1 = 0;
-		int pA2 = 50000;
+		int pA2 = A1;
 		int pB2 = 0;
 		int pC2 = 0;
 		
@@ -161,7 +161,7 @@ public class JHopfield {
 		double S = i + j + k + l;
 
 		// Initial Entropy
-		System.out.println("S =" + S);
+		// System.out.println("S =" + S);
 		double S0 = S;
 		// For change in entropy calculations
 		double dS = 0;
@@ -184,7 +184,7 @@ public class JHopfield {
 
 		// =================================================================Generate
 		// datafile with header
-		String fileName = "V2" + filekey + "_" + args[0]+ "_.txt";
+		String fileName = "Results/SymChannel/Phase/D"+ args[0]+"/Sym_"+filekey+"_"+args[0]+"_n"+args[7]+"_.txt";
 		try {
 			PrintWriter outputStream = new PrintWriter(fileName);
 			outputStream.println(df.format(cal.getTime()));
@@ -498,22 +498,22 @@ public class JHopfield {
 
 		// ======================================Terminal
 		// Output================================================
-		System.out.println("S-S(0) = " + (S - S0));
+		// System.out.println("S-S(0) = " + (S - S0));
+		// // System.out.println();
+		// // ======================================Particle numbers
+		// System.out.println("A1\tB1\tC1\tA2");
+		// System.out.println(A1 + "\t" + B1 + "\t" + C1 + "\t" + A2);
 		// System.out.println();
-		// ======================================Particle numbers
-		System.out.println("A1\tB1\tC1\tA2");
-		System.out.println(A1 + "\t" + B1 + "\t" + C1 + "\t" + A2);
-		System.out.println();
-		System.out.println("Irreversibles:\t" + xu);
-		System.out.println();
-		System.out.println("Correct and Incorrect");
-		System.out.println("xB1A2\txC1A2\txB1A1\txC1A1");
-		System.out.println(xB1A2 + "\t" + xC1A2 + "\t" + xB1A1 + "\t" + xC1A1);
-		System.out.println();
-		final long duration = System.nanoTime() - startTime;
-		System.out.println();
-		System.out.println("Execution time: " + duration / 1000000000.0 + " seconds.");
-		System.out.println("Saved to " + fileName);
-		System.out.println("");
+		// System.out.println("Irreversibles:\t" + xu);
+		// System.out.println();
+		// System.out.println("Correct and Incorrect");
+		// System.out.println("xB1A2\txC1A2\txB1A1\txC1A1");
+		// System.out.println(xB1A2 + "\t" + xC1A2 + "\t" + xB1A1 + "\t" + xC1A1);
+		// System.out.println();
+		// final long duration = System.nanoTime() - startTime;
+		// System.out.println();
+		// System.out.println("Execution time: " + duration / 1000000000.0 + " seconds.");
+		// System.out.println("Saved to " + fileName);
+		// System.out.println("");
 	}
 }
