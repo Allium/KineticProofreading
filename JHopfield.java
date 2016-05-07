@@ -46,7 +46,7 @@ public class JHopfield {
 		
 		// ======================================Unprimed Quantities
 		int E1 = 1;
-		int A1 = 5000;
+		int A1 = 10000;
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
@@ -202,7 +202,7 @@ public class JHopfield {
 
 			// Loop through Time and output line by line
 			for (t = 0; t <= timeMax; t++) {
-				if (t % (timeMax / 1000) == 0) {
+				if (t % (timeMax / 5000) == 0) {
 					outputStream.print(t);
 					outputStream.print("\t");
 					 outputStream.print(A1);

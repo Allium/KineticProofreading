@@ -43,8 +43,12 @@ def main():
 	if plotall:
 		showfig = False
 		raise AttributeError, me+"Functionality doesn't exist."
-	else:
-		phase_delta(args[0], Delta, theory, nosave, verbose)
+	elif theory != 2:
+		phase_dat = phase_calc(args[0], Delta, theory, verbose)
+		phase_plot(args[0], theory, nosave, verbose, Delta, *phase_dat)
+	elif theory == 2:
+		phase_dat = phase_theo(Delta, verbose)
+		phase_plot(args[0], theory, nosave, verbose, Delta, *phase_dat)
 	
 	if verbose: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
@@ -53,9 +57,9 @@ def main():
 	
 
 ##=============================================================================
-def phase_delta(dirpath, Delta, theory, ns, vb):
+def phase_calc(dirpath, Delta, th, vb):
 	
-	me = "PhaseDiagram.phase_delta: "
+	me = "PhaseDiagram.phase_calc: "
 	t0 = time.time()
 
 	##-------------------------------------------------------------------------
@@ -82,6 +86,7 @@ def phase_delta(dirpath, Delta, theory, ns, vb):
 		t, A1, work = data[[0,1,6]]
 		
 		## Normalise ent and work
+		t /= N
 		ent = calc_ent_norm(A1/(N/2.0))
 		work *= (0.0 if Delta == 1.0 else 1.0/(np.log(Delta) * N*np.log(2)))
 		
@@ -90,17 +95,16 @@ def phase_delta(dirpath, Delta, theory, ns, vb):
 		tSS = t[SSidx]
 		
 		## Simulation calculations
-		if theory == 0 or theory == 1:
-			DS[0,i]	= np.mean(ent[SSidx:])
-			T[0,i]	= tSS
-			Wdot[0,i]	= np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
-			W_srt[0,i]	= work[SSidx]
+		DS[0,i]	= np.mean(ent[SSidx:])
+		T[0,i]	= tSS
+		Wdot[0,i]	= np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
+		W_srt[0,i]	= work[SSidx]
 		
 		## Theory calculations
-		if theory == 1 or theory == 2:
+		if th == 1:
 			DS[1,i]	= SSS_theo(Delta,k)
-			T[1,i]	= SSt_theo(Delta,k)*N
-			Wdot[1,i]	= -SSW_theo(Delta,k)/(N*np.log(2))
+			T[1,i]	= SSt_theo(Delta,k)
+			Wdot[1,i]	= -SSW_theo(Delta,k)
 		
 	## Sort
 	idx = np.argsort(T[0])
@@ -111,13 +115,19 @@ def phase_delta(dirpath, Delta, theory, ns, vb):
 	
 	if vb: print me+"Data extraction and calculations:",round(time.time()-t0,2),"seconds."
 	
-	##-------------------------------------------------------------------------
-	## Plotting
+	return (T, DS, Wdot, W_srt)
+
+	
+##=============================================================================	
+def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
+	
+	me = "PhaseDiagram.phase_plot: "
+	t0 = time.time()
 	
 	fsa,fsl,fst = 16,14,18
 	
 	plotkey = ["sim","simpre","pre"]
-	plotfile = dirpath+"/PhaseDiagram_"+plotkey[theory]+"_D"+str(Delta)+".png"
+	plotfile = dirpath+"/PhaseDiagram_"+plotkey[th]+"_D"+str(Delta)+".png"
 	
 	plt.figure("Phase Diagram")
 	plt.subplot(111)
@@ -137,9 +147,9 @@ def phase_delta(dirpath, Delta, theory, ns, vb):
 	z_g = z_interpfunc(T_g, Wdot_g)
 	plt.imshow(z_g, vmin=DS.min(), vmax=DS.max(), origin="lower", extent=[Wdot.min(),Wdot.max(),T.min(),T.max()])"""
 
-	if theory == 0 or theory == 1:
+	if th == 0 or th == 1:
 		plt.scatter(T[0], Wdot[0], c=z[0], marker="o", label="Simulation")
-	if theory == 1 or theory == 2:
+	if th == 1 or th == 2:
 		plt.scatter(T[1], Wdot[1], c=z[1], marker="x", label="Theory")
 	
 	plt.xlim(left=0.0)
@@ -159,11 +169,51 @@ def phase_delta(dirpath, Delta, theory, ns, vb):
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
 
-	if vb: print me+"Execution",round(time.time()-t0,2),"seconds."
+	if vb: print me+"Plotting",round(time.time()-t0,2),"seconds."
 	
 	return
 	
 
+##=============================================================================
+def phase_theo(Delta, vb):
+
+	me = "PhaseDiagram.phase_theo: "
+	t0 = time.time()
+	
+	N = 20000
+	
+	A1B = np.arange(0.005,0.04,0.005)
+	BA1 = np.arange(0.001,0.02,0.002)
+	BC  = np.arange(0.001,0.04,0.002)
+	CA1 = np.arange(0.001,0.02,0.002)
+	klist = [{"A1B1": a1b, "B1A1": ba1, "C1B1": bc, "C1A1": ca1} \
+				for a1b in A1B for ba1 in BA1 for bc in BC for ca1 in CA1]
+	npoints = len(klist)
+	if vb:	print me+"Computing",npoints,"points."
+
+	## Initialise arrays
+	DS	= np.zeros([2,npoints])
+	T	= np.zeros([2,npoints])
+	W_srt	= np.zeros([2,npoints])
+	Wdot	= np.zeros([2,npoints])
+	
+	for i,k in enumerate(klist):
+		DS[1,i]	= SSS_theo(Delta,k)
+		T[1,i]	= SSt_theo(Delta,k)
+		Wdot[1,i]	= -SSW_theo(Delta,k)
+		
+	## Sort
+	idx = np.argsort(T[1])
+	T = T[:,idx]
+	DS = DS[:,idx]
+	Wdot = Wdot[:,idx]
+	W_srt = W_srt[:,idx]
+	
+	Wdot[0,0] = Wdot.min()
+	
+	if vb: print me+"Calculations:",round(time.time()-t0,2),"seconds."
+	
+	return (T, DS, Wdot, W_srt)
 
 ##=============================================================================
 ##=============================================================================
