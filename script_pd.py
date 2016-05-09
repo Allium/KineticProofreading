@@ -18,7 +18,7 @@ klist = [[a1b,ba1,bc,ca1] for a1b in A1B for ba1 in BA1 for bc in BC for ca1 in 
 print me+str(len(klist))+" points. Time estimate: ~"+str(round(len(klist)*25.0/3600,1))+" hours."
 
 os.system("javac JHopfield.java")
-for D in [4.0]:
+for D in [5.0,15.0]:
 	outdir = "./Results/SymChannel/Phase/D"+str(D)+"/"
 	if not os.path.isdir(outdir):
 		os.makedirs(outdir)
