@@ -16,33 +16,36 @@ def main():
 	parser = optparse.OptionParser()
 	parser.add_option('-s','--show',
 		dest="showfig", default=False, action="store_true")
+	parser.add_option('--nosave',
+		dest="nosave", default=False, action="store_true")
 	parser.add_option('-a','--plotall',
 		dest="plotall", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
 	opt, args = parser.parse_args()
 	showfig = opt.showfig
+	nosave = opt.nosave
 	plotall = opt.plotall
-	vb = opt.verbose
+	verbose = opt.verbose
 
 	if os.path.isfile(args[0]):
-		plot_time(args[0], vb)
+		plot_time(args[0], nosave, verbose)
 	elif os.path.isdir(args[0]) and plotall:
 		showfig = False
-		plot_time_all(args[0], vb)
+		plot_time_all(args[0], nosave, verbose)
 	elif os.path.isdir(args[0]):
-		plot_delta(args[0], vb)
+		plot_delta(args[0], nosave, verbose)
 	else:
 		raise IOError(me+"Input not a file or directory.")
 
-	if vb: print me+"Execution",round(time.time()-t0,2),"seconds."
+	if verbose: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
 	
 	return
 
 
 ##=============================================================================
-def plot_time(datafile, vb):
+def plot_time(datafile, ns, vb):
 	"""
 	"""
 	me = "SymPlot.plot_time: "
@@ -55,11 +58,11 @@ def plot_time(datafile, vb):
 	data = np.loadtxt(datafile, skiprows=10, unpack=True)
 	data = data[:, ::int(data.shape[1]/npts)]
 
-	t, A1, work = data[[0,1,6]]
+	t, A1, A2p, work = data[[0,1,4,6]]
 	N = int(data[[1,2,3,4],0].sum())
-	del data
 
-	ent = calc_ent_norm(A1/(N/2.0))
+	t /= N
+	ent = 0.5*(calc_ent_norm(A1/(N/2.0))+calc_ent_norm(A2p/(N/2.0)))
 	Sssid = flatline(ent) if Delta > 1 else 0
 	tSS = t[Sssid]
 
@@ -69,18 +72,18 @@ def plot_time(datafile, vb):
 	plt.clf()
 
 	plt.plot(t, ent, "b-", label="$S / N\ln2$")
-	plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
+	# plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
 	## Theory
-	plt.axhline(SSS_theo(Delta, k),   c="b",ls=":",lw=2, label="$S$ prediction")
-	plt.axvline(SSt_theo(Delta, k)*N, c="r",ls=":",lw=2, label="$\\tau$ prediction")
+	plt.axhline(SSS_theo(Delta, k), c="b",ls=":",lw=2, label="$S$ prediction")
+	plt.axvline(SSt_theo(Delta, k), c="r",ls=":",lw=2, label="$\\tau$ prediction")
 	wgrad = SSW_theo(Delta, k)*N
 	# plt.plot(t, t/t[-1]*(-1+wgrad*t[-1]) - wgrad*t[-1], c="g",ls=":",lw=2,\
 				# label="$\\dot W_{\\rm SS}$ prediction")
 	# plt.plot(t, -t/t[-1], c="g",ls=":",lw=2, label="$\\dot W_{\\rm SS}$ prediction")
 	
 	plt.axvline(tSS, c="k")
-	plt.axvspan(t[0],tSS,  color="b",alpha=0.05)
+	# plt.axvspan(t[0],tSS,  color="b",alpha=0.05)
 	plt.axvspan(tSS,t[-1], color="g",alpha=0.05)
 
 	## Plot properties
@@ -88,24 +91,25 @@ def plot_time(datafile, vb):
 	plt.ylim([-1.1,0.1])
 	plt.xlabel("$t$")
 	plt.title("$\Delta=$"+str(Delta))
-	plt.legend()
+	plt.legend(loc="lower right")
 	plt.grid()
 
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 
 	return
 
 ##=============================================================================
 
-def plot_time_all(dirpath, vb):
-	for datafile in glob.glob(dirpath+"/*.txt"):
-		plot_time(datafile, vb)
+def plot_time_all(dirpath, ns, vb):
+	for datafile in np.sort(glob.glob(dirpath+"/*.txt")):
+		plot_time(datafile, ns, vb)
 	return
 
 ##=============================================================================
 
-def plot_delta(dirpath, vb):
+def plot_delta(dirpath, ns, vb):
 	"""
 	"""
 	me = "SymPlot.plot_delta: "
@@ -231,8 +235,9 @@ def plot_delta(dirpath, vb):
 	plt.ylabel("Error Rate Ratio $\\langle\\dot I\\rangle/\\langle\\dot C\\rangle$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 
 	## SS ENTROPY
 	
@@ -250,8 +255,9 @@ def plot_delta(dirpath, vb):
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 	plt.grid()
 	plt.legend(loc="upper right", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 	
 	## SS ENTROPY H/N
 	
@@ -268,8 +274,9 @@ def plot_delta(dirpath, vb):
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
 	plt.grid()
 	plt.legend(loc="lower right")
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 	
 	## TIME TO REACH STEADY STATE
 	
@@ -285,8 +292,9 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="best", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 
 	## TOTAL WORK TO SORT
 	
@@ -302,8 +310,9 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 		
 	## SS WORK RATE
 	
@@ -320,8 +329,9 @@ def plot_delta(dirpath, vb):
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 	
 	## NET COST
 	
@@ -336,8 +346,9 @@ def plot_delta(dirpath, vb):
 	ax.set_ylabel("Net cost: $\\Delta S - W/T$")
 	plt.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
-	plt.savefig(plotfile)
-	if vb: print me+"Plot saved to",plotfile
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
 	
 	##
 	
@@ -375,7 +386,7 @@ def SSS_theo(D, k):
 	a1b = k["A1B1"]
 	ba1 = k["B1A1"]
 	ca1 = k["C1A1"]
-	cb  = k["C1B1"]
+	cb  = k["B1C1"]
 	num = (ca1*cb + ba1*ca1 + ba1*cb) + ca1*ca1*D
 	den = (ba1*cb + ba1*ca1 + ca1*cb) + (2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
 	A1SS = num/den
@@ -389,7 +400,7 @@ def SSW_theo(D, k):
 	a1b = k["A1B1"]
 	ba1 = k["B1A1"]
 	ca1 = k["C1A1"]
-	cb  = k["C1B1"]
+	cb  = k["B1C1"]
 	num = a1b*ca1*(ca1+2*cb) + a1b*ca1*ca1*D
 	den = a1b*ca1+ba1*ca1+2*a1b*cb+ba1*cb+ca1*cb + (a1b*ca1+2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
 	return num/den
@@ -401,7 +412,7 @@ def SSt_theo(D, k):
 	a1b = k["A1B1"]
 	ba1 = k["B1A1"]
 	ca1 = k["C1A1"]
-	cb  = k["C1B1"]
+	cb  = k["B1C1"]
 	num = a1b*ba1*ca1*ca1 + ba1*ba1*ca1*ca1 + 3*a1b*ba1*ca1*cb + 2*ba1*ba1*ca1*cb + \
 			a1b*ca1*ca1*cb + 2*ba1*ca1*ca1*cb + 2*a1b*ba1*cb*cb + ba1*ba1*cb*cb + \
 			2*a1b*ca1*cb*cb + 2*ba1*ca1*cb*cb + ca1*ca1*cb*cb + \
@@ -437,7 +448,7 @@ def SSt_theo(D, k):
 	##
 	tau = num/den
 	##
-	return np.log(20)*tau
+	return tau*np.log(20)
 
 ##=============================================================================
 

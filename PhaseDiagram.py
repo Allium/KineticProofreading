@@ -4,20 +4,33 @@ from scipy.signal import fftconvolve
 from scipy.optimize import curve_fit
 from scipy.interpolate import Rbf
 from matplotlib import pyplot as plt
-import os, glob, optparse, time
+import os, glob, optparse, time, sys
 from SymPlot import *
 
 ##=============================================================================
 def main():
 	"""
+	NAME
+		PhaseDiagram.py
+		
+	EXECUTION
+		python PhaseDiagram.py dirpath opts/flags
+		
+	OPTS
+			--plot_theory	0	0,1,2
+	
+	FLAGS
+		-a	--plotall	False
+		-s	--show		False
+			--nosave	False
+		-v	--verbose	False
+		-h	--help		False
 	"""
 	me = "PhaseDiagram.main: "
 	t0 = time.time()
 
 	## Options
-	parser = optparse.OptionParser()
-	parser.add_option('-D','--Delta',
-		dest="Delta", default=5.0, type="float")
+	parser = optparse.OptionParser(conflict_handler="resolve")
 	parser.add_option('--plot_theory',
 		dest="theory", default=0, type="int")
 	parser.add_option('-s','--show',
@@ -28,17 +41,25 @@ def main():
 		dest="plotall", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
+	parser.add_option('-h','--help',
+		dest="help", default=False, action="store_true")
 	opt, args = parser.parse_args()
 	
-	Delta = opt.Delta
+	if opt.help:
+		print main.__doc__
+		return	
 	theory = opt.theory
 	showfig = opt.showfig
 	nosave = opt.nosave
 	plotall = opt.plotall
 	verbose = opt.verbose
 
+	args[0] = args[0].replace("\\","/")
 	assert os.path.isdir(args[0]), me+"First CLA must be a directory path."
 	assert theory == 0 or 1 or 2, me+"plot_theory = 0,1,2."
+	
+	try:				Delta = float(args[0][args[0].find("/D")+2:])
+	except ValueError:	Delta = float(args[0][args[0].find("/D")+2:-1])
 	
 	if plotall:
 		showfig = False
@@ -74,9 +95,14 @@ def phase_calc(dirpath, Delta, th, vb):
 	T	= np.zeros([2,numfiles])
 	W_srt	= np.zeros([2,numfiles])
 	Wdot	= np.zeros([2,numfiles])
+	j=0
 	
 	## Get data from all files
 	for i in range(numfiles):
+	
+		if vb and i%(numfiles/20)==0:
+			sys.stdout.write("\r"+me+"Processing: [%-20s] %d%%" % ('='*j, 5*j))
+			j+=1
 	
 		k = get_headinfo(filelist[i])
 		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
@@ -85,7 +111,7 @@ def phase_calc(dirpath, Delta, th, vb):
 		N = int(data[[1,2,3,4],0].sum())
 		t, A1, work = data[[0,1,6]]
 		
-		## Normalise ent and work
+		## Normalise time, ent and work
 		t /= N
 		ent = calc_ent_norm(A1/(N/2.0))
 		work *= (0.0 if Delta == 1.0 else 1.0/(np.log(Delta) * N*np.log(2)))
@@ -113,7 +139,7 @@ def phase_calc(dirpath, Delta, th, vb):
 	Wdot = Wdot[:,idx]
 	W_srt = W_srt[:,idx]
 	
-	if vb: print me+"Data extraction and calculations:",round(time.time()-t0,2),"seconds."
+	if vb: print "\n"+me+"Data extraction and calculations:",round(time.time()-t0,2),"seconds."
 	
 	return (T, DS, Wdot, W_srt)
 
@@ -126,19 +152,26 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	
 	fsa,fsl,fst = 16,14,18
 	
-	plotkey = ["sim","simpre","pre"]
-	plotfile = dirpath+"/PhaseDiagram_"+plotkey[th]+"_D"+str(Delta)+".png"
-	
-	plt.figure("Phase Diagram")
-	plt.subplot(111)
+	## Z-AXIS
 	
 	ent = True
 	if ent:
 		z = DS
 		tit = "$\\Delta S$. "
+		plotkey = "_S"
 	else:
+		## Remember W<0
+		if th != 0: print me+"Warning: No theory for W_sort."
 		z = DS - W_srt
-		tit = "$\\Delta S - W_{\\rm sort}$"
+		tit = "$\\Delta S - W_{\\rm sort}$. "
+		plotkey = "_SW"
+	plotkey = ["sim","simpre","pre"][th] + plotkey
+	plotfile = dirpath+"/PhaseDiagram_"+plotkey+"_D"+str(Delta)+".png"
+	
+	## PLOTTING
+	
+	plt.figure("Phase Diagram")
+	plt.subplot(111)
 	
 	"""## Grid of interpolation points
 	T_g, Wdot_g = np.meshgrid(np.linspace(T.min(), T.max(), 10), np.linspace(Wdot.min(), Wdot.max(), 10))
@@ -152,10 +185,13 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	if th == 1 or th == 2:
 		plt.scatter(T[1], Wdot[1], c=z[1], marker="x", label="Theory")
 	
+	## PLOT PROPERTIES
+	
 	plt.xlim(left=0.0)
 	plt.ylim(top=0.0,bottom=Wdot[0].min())
 	plt.colorbar()
-	if ent:	plt.clim(0.0,-1.0)
+	plt.clim(vmin=-1.0)
+	if ent:	plt.clim(vmax=0.0)
 	
 	plt.xlabel("$\\tau$",fontsize=fsa)
 	plt.ylabel("$\\dot W_{\\rm SS}$",fontsize=fsa)
@@ -165,6 +201,8 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	plt.gca().yaxis.major.formatter.set_powerlimits((0,0)) 
 	plt.grid()
 
+	## SAVING
+	
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -180,13 +218,13 @@ def phase_theo(Delta, vb):
 	me = "PhaseDiagram.phase_theo: "
 	t0 = time.time()
 	
-	N = 20000
+	print me+"Plotting theoretical phase diagram for Delta =",Delta
 	
 	A1B = np.arange(0.005,0.04,0.005)
 	BA1 = np.arange(0.001,0.02,0.002)
 	BC  = np.arange(0.001,0.04,0.002)
 	CA1 = np.arange(0.001,0.02,0.002)
-	klist = [{"A1B1": a1b, "B1A1": ba1, "C1B1": bc, "C1A1": ca1} \
+	klist = [{"A1B1": a1b, "B1A1": ba1, "B1C1": bc, "C1A1": ca1} \
 				for a1b in A1B for ba1 in BA1 for bc in BC for ca1 in CA1]
 	npoints = len(klist)
 	if vb:	print me+"Computing",npoints,"points."
@@ -207,7 +245,6 @@ def phase_theo(Delta, vb):
 	T = T[:,idx]
 	DS = DS[:,idx]
 	Wdot = Wdot[:,idx]
-	W_srt = W_srt[:,idx]
 	
 	Wdot[0,0] = Wdot.min()
 	
