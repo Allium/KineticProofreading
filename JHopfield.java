@@ -50,7 +50,7 @@ public class JHopfield {
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
-		int A2 = A1;
+		int A2 = 10000;
 		int B2 = 0;
 		int C2 = 0;
 		
@@ -58,10 +58,10 @@ public class JHopfield {
 		int A20 = A2;
 
 		// ======================================Primed Quantities
-		int pA1 = A1;
+		int pA1 = 10000;
 		int pB1 = 0;
 		int pC1 = 0;
-		int pA2 = A1;
+		int pA2 = 10000;
 		int pB2 = 0;
 		int pC2 = 0;
 		
@@ -202,7 +202,7 @@ public class JHopfield {
 
 			// Loop through Time and output line by line
 			for (t = 0; t <= timeMax; t++) {
-				if (t % (timeMax / 5000) == 0) {
+				if (t % (timeMax / 2000) == 0) {
 					outputStream.print(t);
 					outputStream.print("\t");
 					 outputStream.print(A1);
