@@ -20,9 +20,10 @@ def main():
 			--plot_theory	0	0,1,2
 	
 	FLAGS
-		-S	--entropy	False	Use entropy as quality metric (default S-W)
+		-S	--entropy	False	Use entropy as quality metric (default S-W).
 		-s	--show		False
 			--nosave	False
+		-a	--allplot	False	Make all relevant plots for directory.
 		-v	--verbose	False
 		-h	--help		False
 	"""
@@ -40,6 +41,8 @@ def main():
 		dest="showfig", default=False, action="store_true")
 	parser.add_option('--nosave',
 		dest="nosave", default=False, action="store_true")
+	parser.add_option('-a','--plotall',
+		dest="plotall", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
 	parser.add_option('-h','--help',
@@ -53,26 +56,36 @@ def main():
 	theory 	= opt.theory
 	showfig = opt.showfig
 	nosave 	= opt.nosave
+	plotall	= opt.plotall
 	verbose = opt.verbose
+	dirpath = args[0]
 
-	args[0] = args[0].replace("\\","/")
-	assert os.path.isdir(args[0]), me+"First CLA must be a directory path."
+	## Tests
+	dirpath = dirpath.replace("\\","/")
+	assert os.path.isdir(dirpath), me+"First CLA must be a directory path."
 	assert theory == 0 or 1 or 2, me+"Usage: --plot_theory [0,1,2]."
-	if not plotent: assert theory == 0, me+"No theory for W_sort."
+	if (plotent is False and theory != 0):
+		print me+"Warning! No theory for W_sort. Plotting entropy change only."
+		plotent = True
 	
-	try:				Delta = float(args[0][args[0].find("/D")+2:])
-	except ValueError:	Delta = float(args[0][args[0].find("/D")+2:-1])
+	## Infer Delta from dirpath
+	try:				Delta = float(dirpath[dirpath.find("/D")+2:])
+	except ValueError:	Delta = float(dirpath[dirpath.find("/D")+2:-1])
 	
 	## Calculations
-	if theory == 0 or theory == 1:
+	if plotall:
+		if verbose: print me+"Plotting all phase diagrams for Delta =",Delta,"\n"
+		plot_all(dirpath, Delta, verbose)
+		return
+	elif theory == 0 or theory == 1:
 		if verbose: print me+"Plotting simulated phase diagram for Delta =",Delta
-		phase_dat = phase_calc(args[0], Delta, theory, verbose)
+		phase_dat = phase_calc(dirpath, Delta, theory, verbose)
 	elif theory == 2:
 		if verbose: print me+"Plotting theoretical phase diagram for Delta =",Delta
 		phase_dat = phase_theo(Delta, verbose)
 	
 	## Plotting
-	phase_plot(args[0], theory, plotent, nosave, verbose, Delta, *phase_dat)
+	phase_plot(dirpath, theory, plotent, nosave, verbose, Delta, *phase_dat)
 	
 	if verbose: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
@@ -129,6 +142,8 @@ def phase_calc(dirpath, Delta, th, vb):
 		Wdot[0,i]	= np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
 		W_srt[0,i]	= work[SSidx]
 		
+		if (tSS>3e2 and Wdot[0,i]<-0.8e-2): print [i],filelist[i],k
+		
 		## Theory calculations
 		if th == 1:
 			DS[1,i]	= SSS_theo(Delta,k)
@@ -171,11 +186,11 @@ def phase_plot(dirpath, th, pe, ns, vb, Delta, T, DS, Wdot, W_srt):
 	
 	## PLOTTING
 	
-	plt.figure("Phase Diagram")
+	fig = plt.figure("Phase Diagram")
 	plt.subplot(111)
 	
-	if th == 1:	plt.scatter(T[1], Wdot[1], c=z[1], marker="x", label="Theory")
-	plt.scatter(T[0], Wdot[0], c=z[0], marker="o", label="Simulation")
+	if th != 0:	plt.scatter(T[1], Wdot[1], marker="x", c=z[1], label="Theory")
+	plt.scatter(T[0], Wdot[0], marker="o", c=z[0], edgecolor="None", label="Simulation")
 	
 	## PLOT PROPERTIES
 	
@@ -196,7 +211,7 @@ def phase_plot(dirpath, th, pe, ns, vb, Delta, T, DS, Wdot, W_srt):
 	## SAVING
 	
 	if not ns:
-		plt.savefig(plotfile)
+		plt.savefig(plotfile, dpi=2*fig.dpi)
 		if vb: print me+"Plot saved to",plotfile
 
 	if vb: print me+"Plotting",round(time.time()-t0,2),"seconds."
@@ -241,6 +256,25 @@ def phase_theo(Delta, vb):
 	if vb: print me+"Calculations:",round(time.time()-t0,2),"seconds."
 	
 	return (T, DS, Wdot, W_srt)
+
+##=============================================================================
+def plot_all(dirpath,Delta,verbose):
+	## S theory
+	phase_dat = phase_theo(Delta, verbose)
+	phase_plot(dirpath, 2, True, False, verbose, Delta, *phase_dat)
+	plt.close();	print "\n"
+	## S sim
+	phase_dat = phase_calc(dirpath, Delta, 0, verbose)
+	phase_plot(dirpath, 0, True, False, verbose, Delta, *phase_dat)
+	plt.close();	print "\n"
+	## S sim+theo
+	phase_dat = phase_calc(dirpath, Delta, 1, verbose)
+	phase_plot(dirpath, 1, True, False, verbose, Delta, *phase_dat)
+	plt.close();	print "\n"
+	## WS sim
+	phase_dat = phase_calc(dirpath, Delta, 0, verbose)
+	phase_plot(dirpath, 0, False, False, verbose, Delta, *phase_dat)
+	return exit()
 
 ##=============================================================================
 ##=============================================================================
