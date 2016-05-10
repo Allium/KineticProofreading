@@ -20,12 +20,13 @@ def main():
 			--plot_theory	0	0,1,2
 	
 	FLAGS
-		-a	--plotall	False
+		-S	--entropy	False	Use entropy as quality metric (default S-W)
 		-s	--show		False
 			--nosave	False
 		-v	--verbose	False
 		-h	--help		False
 	"""
+	
 	me = "PhaseDiagram.main: "
 	t0 = time.time()
 
@@ -33,12 +34,12 @@ def main():
 	parser = optparse.OptionParser(conflict_handler="resolve")
 	parser.add_option('--plot_theory',
 		dest="theory", default=0, type="int")
+	parser.add_option('-S','--entropy',
+		dest="plotent", default=False, action="store_true")
 	parser.add_option('-s','--show',
 		dest="showfig", default=False, action="store_true")
 	parser.add_option('--nosave',
 		dest="nosave", default=False, action="store_true")
-	parser.add_option('-a','--plotall',
-		dest="plotall", default=False, action="store_true")
 	parser.add_option('-v','--verbose',
 		dest="verbose", default=False, action="store_true")
 	parser.add_option('-h','--help',
@@ -47,29 +48,31 @@ def main():
 	
 	if opt.help:
 		print main.__doc__
-		return	
-	theory = opt.theory
+		return
+	plotent = opt.plotent
+	theory 	= opt.theory
 	showfig = opt.showfig
-	nosave = opt.nosave
-	plotall = opt.plotall
+	nosave 	= opt.nosave
 	verbose = opt.verbose
 
 	args[0] = args[0].replace("\\","/")
 	assert os.path.isdir(args[0]), me+"First CLA must be a directory path."
-	assert theory == 0 or 1 or 2, me+"plot_theory = 0,1,2."
+	assert theory == 0 or 1 or 2, me+"Usage: --plot_theory [0,1,2]."
+	if not plotent: assert theory == 0, me+"No theory for W_sort."
 	
 	try:				Delta = float(args[0][args[0].find("/D")+2:])
 	except ValueError:	Delta = float(args[0][args[0].find("/D")+2:-1])
 	
-	if plotall:
-		showfig = False
-		raise AttributeError, me+"Functionality doesn't exist."
-	elif theory != 2:
+	## Calculations
+	if theory == 0 or theory == 1:
+		if verbose: print me+"Plotting simulated phase diagram for Delta =",Delta
 		phase_dat = phase_calc(args[0], Delta, theory, verbose)
-		phase_plot(args[0], theory, nosave, verbose, Delta, *phase_dat)
 	elif theory == 2:
+		if verbose: print me+"Plotting theoretical phase diagram for Delta =",Delta
 		phase_dat = phase_theo(Delta, verbose)
-		phase_plot(args[0], theory, nosave, verbose, Delta, *phase_dat)
+	
+	## Plotting
+	phase_plot(args[0], theory, plotent, nosave, verbose, Delta, *phase_dat)
 	
 	if verbose: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
@@ -100,7 +103,7 @@ def phase_calc(dirpath, Delta, th, vb):
 	## Get data from all files
 	for i in range(numfiles):
 	
-		if vb and i%(numfiles/20)==0:
+		if vb and i%((numfiles-1)/20)==0:
 			sys.stdout.write("\r"+me+"Processing: [%-20s] %d%%" % ('='*j, 5*j))
 			j+=1
 	
@@ -145,7 +148,7 @@ def phase_calc(dirpath, Delta, th, vb):
 
 	
 ##=============================================================================	
-def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
+def phase_plot(dirpath, th, pe, ns, vb, Delta, T, DS, Wdot, W_srt):
 	
 	me = "PhaseDiagram.phase_plot: "
 	t0 = time.time()
@@ -154,14 +157,12 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	
 	## Z-AXIS
 	
-	ent = True
-	if ent:
+	if pe:
 		z = DS
 		tit = "$\\Delta S$. "
 		plotkey = "_S"
 	else:
 		## Remember W<0
-		if th != 0: print me+"Warning: No theory for W_sort."
 		z = DS - W_srt
 		tit = "$\\Delta S - W_{\\rm sort}$. "
 		plotkey = "_SW"
@@ -173,17 +174,8 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	plt.figure("Phase Diagram")
 	plt.subplot(111)
 	
-	"""## Grid of interpolation points
-	T_g, Wdot_g = np.meshgrid(np.linspace(T.min(), T.max(), 10), np.linspace(Wdot.min(), Wdot.max(), 10))
-	## Interpolate
-	z_interpfunc = Rbf(T, Wdot, z, function="linear")
-	z_g = z_interpfunc(T_g, Wdot_g)
-	plt.imshow(z_g, vmin=DS.min(), vmax=DS.max(), origin="lower", extent=[Wdot.min(),Wdot.max(),T.min(),T.max()])"""
-
-	if th == 0 or th == 1:
-		plt.scatter(T[0], Wdot[0], c=z[0], marker="o", label="Simulation")
-	if th == 1 or th == 2:
-		plt.scatter(T[1], Wdot[1], c=z[1], marker="x", label="Theory")
+	if th == 1:	plt.scatter(T[1], Wdot[1], c=z[1], marker="x", label="Theory")
+	plt.scatter(T[0], Wdot[0], c=z[0], marker="o", label="Simulation")
 	
 	## PLOT PROPERTIES
 	
@@ -191,7 +183,7 @@ def phase_plot(dirpath, th, ns, vb, Delta, T, DS, Wdot, W_srt):
 	plt.ylim(top=0.0,bottom=Wdot[0].min())
 	plt.colorbar()
 	plt.clim(vmin=-1.0)
-	if ent:	plt.clim(vmax=0.0)
+	if pe:	plt.clim(vmax=0.0)
 	
 	plt.xlabel("$\\tau$",fontsize=fsa)
 	plt.ylabel("$\\dot W_{\\rm SS}$",fontsize=fsa)
@@ -217,8 +209,6 @@ def phase_theo(Delta, vb):
 
 	me = "PhaseDiagram.phase_theo: "
 	t0 = time.time()
-	
-	print me+"Plotting theoretical phase diagram for Delta =",Delta
 	
 	A1B = np.arange(0.005,0.04,0.005)
 	BA1 = np.arange(0.001,0.02,0.002)
