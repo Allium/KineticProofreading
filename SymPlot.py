@@ -1,3 +1,4 @@
+me0 = "SymPlot"
 
 import numpy as np
 from scipy.signal import fftconvolve
@@ -5,11 +6,14 @@ from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 import os, glob, optparse, time
 
+from Utils import fs, set_mplrc
+set_mplrc(fs)
+
 ##=============================================================================
 def main():
 	"""
 	"""
-	me = "SymPlot.main: "
+	me = me0+".main: "
 	t0 = time.time()
 
 	## Options
@@ -48,9 +52,9 @@ def main():
 def plot_time(datafile, ns, vb):
 	"""
 	"""
-	me = "SymPlot.plot_time: "
+	me = me0+".plot_time: "
 
-	plotfile = datafile[:-4]+".png"
+	plotfile = datafile[:-4]
 	Delta = get_pars(datafile)
 	k = get_headinfo(datafile)
 
@@ -71,12 +75,13 @@ def plot_time(datafile, ns, vb):
 
 	plt.clf()
 
-	plt.plot(t, ent, "b-", label="$S / N\ln2$")
+	plt.plot(t, ent, "b-", label="Proofread")
+	plt.plot(t, calc_ent_norm(1/(1+Delta))*np.ones(t.size), "g--", label="Equilibrium")
 	# plt.plot(t, -work/work[-1], "g-", label="$W / W(tmax)$")
 
 	## Theory
-	plt.axhline(SSS_theo(Delta, k), c="b",ls=":",lw=2, label="$S$ prediction")
-	plt.axvline(SSt_theo(Delta, k), c="r",ls=":",lw=2, label="$\\tau$ prediction")
+	plt.axhline(SSS_theo(Delta, k), c="b",ls=":",lw=2, label="Prediction")
+	# plt.axvline(SSt_theo(Delta, k), c="r",ls=":",lw=2, label="$\\tau$ prediction")
 	wgrad = SSW_theo(Delta, k)*N
 	# plt.plot(t, t/t[-1]*(-1+wgrad*t[-1]) - wgrad*t[-1], c="g",ls=":",lw=2,\
 				# label="$\\dot W_{\\rm SS}$ prediction")
@@ -88,14 +93,15 @@ def plot_time(datafile, ns, vb):
 
 	## Plot properties
 	plt.xlim(left=0.0,right=t[-1])
-	plt.ylim([-1.1,0.1])
+	plt.ylim([-1.0,0.0])
 	plt.xlabel("$t$")
-	plt.title("$\Delta=$"+str(Delta))
-	plt.legend(loc="lower right")
+	plt.ylabel("$S/N\ln2$")
+	# plt.title("$\Delta=$"+str(Delta))
+	plt.legend(loc="best")
 	plt.grid()
 
 	if not ns:
-		plt.savefig(plotfile)
+		plt.savefig(plotfile+"."+fs["saveext"])
 		if vb: print me+"Plot saved to",plotfile
 
 	return
@@ -131,34 +137,31 @@ def plot_delta(dirpath, ns, vb):
 	notlist = filelist[numfiles/2:]
 	
 	## Initialise arrays
-	Delta = np.zeros(numfiles)
-	S_fin = np.zeros(numfiles)
-	t_SS = np.zeros(numfiles)
-	W_srt = np.zeros(numfiles)
-	Wdot_SS = np.zeros(numfiles)
-	ERR = np.zeros(numfiles)
-	t_SS_th = np.zeros(numfiles)
+	Delta, N, S_fin, t_SS, W_srt, Wdot_SS, ERR, t_SS_th = np.zeros([8,numfiles])
 	
 	## Get data from all files
 	for i in range(numfiles):
 	
 		Delta[i] = get_pars(filelist[i])
 		k = get_headinfo(filelist[i])
-		data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
+		try:
+			data = np.loadtxt(filelist[i], skiprows=10, unpack=True)
+		except ValueError:
+			raise IOError, me+"Error with "+filelist[i]
 		## Prune
 		if data.shape[1]>npts: data = data[:, ::int(data.shape[1]/npts)]
 		
 		## Read relevant columns
-		N = int(data[[1,2,3,4],0].sum())
+		N[i] = int(data[[1,2,3,4],0].sum())
 		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
 		del data
 		
 		## Normalise work
 		if Delta[i] == 1: 	work *= 0.0
-		else:				work /= np.log(Delta[i]) * N*np.log(2)
+		else:				work /= np.log(Delta[i]) * N[i]*np.log(2)
 		
 		## Normalise ent and find SS index
-		ent = calc_ent_norm(A1/(N/2.0))
+		ent = calc_ent_norm(A1/(N[i]/2.0))
 		SSidx = flatline(ent) if Delta[i] > 1 else 0
 		tSS = t[SSidx]
 		
@@ -170,8 +173,8 @@ def plot_delta(dirpath, ns, vb):
 		W_srt[i] = work[SSidx]
 		Wdot_SS[i] = np.mean(work[SSidx:]-work[SSidx])/(t[-1]-tSS)
 
-		err1 = (np.diff(Ap12)/Ap1[:-1]).mean()*(A1[:-1]/np.diff(A12)).mean()
-		err2 = (np.diff(A21)/A2[:-1]).mean()*(Ap2[:-1]/np.diff(Ap21)).mean()
+		err1 = (np.diff(Ap12)/(Ap1[:-1]+(Ap1[:-1]==0))).mean()*(A1[:-1]/(np.diff(A12)+(np.diff(A12)==0))).mean()
+		err2 = (np.diff(A21)/(A2[:-1]+(A2[:-1]==0))).mean()*(Ap2[:-1]/(np.diff(Ap21)+(np.diff(Ap21)==0))).mean()
 		ERR[i] = 0.5*(err1+err2)
 	
 		## Construct prediction arrays
@@ -189,6 +192,7 @@ def plot_delta(dirpath, ns, vb):
 	W_srt = W_srt.reshape(newshape)
 	Wdot_SS  = Wdot_SS.reshape(newshape)
 	ERR = ERR.reshape(newshape)
+	N = np.unique(N)	## Assume all Hop files have same N and all Not files have same N
 	
 	## Sort by Delta
 	sortind = np.argsort(Delta)
@@ -214,27 +218,28 @@ def plot_delta(dirpath, ns, vb):
 	##-------------------------------------------------------------------------
 	## Plotting
 	
-	fsl = 10
+	fsl = fs["fsl"]
+	fs["saveext"] = "png"
 	colour = ["b","r","m"]
 	label = ["Proofread","Equilibrium"]
 
 	## SORTING ERROR RATE RATIO
 	
 	plt.figure("ERR"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_0_ERR.png"
+	plotfile = dirpath+"/DeltaPlot_0_ERR."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
 		fit = fit_par(ERR_fit, Delta[i], ERR[i])
 		ax.plot(Delta[i], ERR[i], colour[i]+"o", label=label[i])
 		ax.plot(Delta[i], Delta[i]**(fit[2]), colour[i]+":", label = "$\Delta^{%.2f}$" % fit[2])
 		ax.plot(Delta[i], Delta[i]**(-2+i), colour[i]+"--", label = "$\Delta^{"+str(-2+i)+"}$")
-	plt.xlim(left=1.0)
+	ax.set_xlim(left=1.0)
 	# plt.ylim(top=1.0)
-	plt.xscale("log");	plt.yscale("log")
-	plt.xlabel("$\\Delta$")
-	plt.ylabel("Error Rate Ratio $\\langle\\dot I\\rangle/\\langle\\dot C\\rangle$")
-	plt.grid()
-	plt.legend(loc="upper right", fontsize=fsl)
+	ax.set_xscale("log");	plt.yscale("log")
+	ax.set_xlabel("$\\Delta$")
+	ax.set_ylabel("Error Rate Ratio $\\langle\\dot I\\rangle/\\langle\\dot C\\rangle$")
+	ax.grid()
+	plt.legend(loc="best", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -242,7 +247,7 @@ def plot_delta(dirpath, ns, vb):
 	## SS ENTROPY
 	
 	plt.figure("SSS"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_1_SSS.png"
+	plotfile = dirpath+"/DeltaPlot_1_SSS."+fs["saveext"]
 	for i in [0,1]:
 		ax.plot(Delta[i], S_fin[i], colour[i]+"o", label=label[i])
 		ax.plot(Delta[i], SSS_theo(Delta[i], k[i]), colour[i]+"--",	label="Predicted")
@@ -253,8 +258,8 @@ def plot_delta(dirpath, ns, vb):
 	ax.set_ylim(top=0.0, bottom=-1.0)
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
-	plt.grid()
-	plt.legend(loc="upper right", fontsize=fsl)
+	ax.grid()
+	plt.legend(loc="best", fontsize=fsl).get_frame().set_alpha(0.5)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -262,7 +267,7 @@ def plot_delta(dirpath, ns, vb):
 	## SS ENTROPY H/N
 	
 	plt.figure("SSSR"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_2_SSSR.png"
+	plotfile = dirpath+"/DeltaPlot_2_SSSR."+fs["saveext"]
 	S_fin_ratio = (S_fin[1]+1.0)/(S_fin[0]+1.0)
 	S_fin_th_ratio = (SSS_theo(Delta[1],k[1])+1.0)/(SSS_theo(Delta[0],k[0])+1.0)	
 	ax.plot(Delta[0], S_fin_ratio, colour[2]+"o", label="Data")
@@ -272,8 +277,8 @@ def plot_delta(dirpath, ns, vb):
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{e}} + 1\\right)) /\
 					\\left(\\Delta S_{\\mathrm{SS}}^{\\mathrm{p}} + 1\\right)$")
-	plt.grid()
-	plt.legend(loc="lower right")
+	ax.grid()
+	plt.legend(loc="best")
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -281,16 +286,16 @@ def plot_delta(dirpath, ns, vb):
 	## TIME TO REACH STEADY STATE
 	
 	plt.figure("tSS"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_3_tSS.png"
+	plotfile = dirpath+"/DeltaPlot_3_tSS."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i], t_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i,1:], N*t_SS_th[i,1:], colour[i]+"--", label="Theory")
+		ax.plot(Delta[i,1:], N[i]*t_SS_th[i,1:], colour[i]+"--", label="Theory")
 	ax.set_xlim(left=1.0)
 	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("$t_{\mathrm{SS}}$")
+	ax.set_ylabel("$t_{\\mathrm{SS}}$")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
-	plt.grid()
+	ax.grid()
 	plt.legend(loc="best", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
@@ -299,7 +304,7 @@ def plot_delta(dirpath, ns, vb):
 	## TOTAL WORK TO SORT
 	
 	plt.figure("Wsort"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_4_Wsort.png"
+	plotfile = dirpath+"/DeltaPlot_4_Wsort."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o", label=label[i])
@@ -308,7 +313,7 @@ def plot_delta(dirpath, ns, vb):
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
-	plt.grid()
+	ax.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
@@ -317,17 +322,17 @@ def plot_delta(dirpath, ns, vb):
 	## SS WORK RATE
 	
 	plt.figure("Wdot"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_5_Wdot.png"
+	plotfile = dirpath+"/DeltaPlot_5_Wdot."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i,1:],-SSW_theo(Delta[i,1:],k[i])/(N*np.log(2)), colour[i]+"--",label="Theory")
+		ax.plot(Delta[i,1:],-SSW_theo(Delta[i,1:],k[i])/(N[i]*np.log(2)), colour[i]+"--",label="Theory")
 	ax.set_ylim(top=0.0)
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
-	plt.grid()
+	ax.grid()
 	plt.legend(loc="lower right", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
@@ -336,16 +341,16 @@ def plot_delta(dirpath, ns, vb):
 	## NET COST
 	
 	plt.figure("Net"); ax = plt.gca()
-	plotfile = dirpath+"/DeltaPlot_6_net.png"
+	plotfile = dirpath+"/DeltaPlot_6_net."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
-		ax.plot(Delta[i], S_fin[i]+W_srt[i], colour[i]+"o", label=label[i])
-	# ax.set_ylim(top=0.0)
+		ax.plot(Delta[i], S_fin[i]-W_srt[i], colour[i]+"o", label=label[i])
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
+	ax.set_ylim(bottom=-1.0)
 	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("Net cost: $\\Delta S - W/T$")
-	plt.grid()
-	plt.legend(loc="lower right", fontsize=fsl)
+	ax.set_ylabel("Net profit: $\\Delta S - W/T$")
+	ax.grid()
+	plt.legend(loc="upper right", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
