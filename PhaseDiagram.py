@@ -1,10 +1,13 @@
+me0 = "PhaseDiagram"
 
 import numpy as np
-from scipy.signal import fftconvolve
-from scipy.optimize import curve_fit
-from scipy.interpolate import Rbf
-from matplotlib import pyplot as plt
 import os, glob, optparse, time, sys
+
+import matplotlib as mpl
+if "SSH_TTY" in os.environ:
+	print me0+": Using Agg backend."
+	mpl.use("Agg")
+from matplotlib import pyplot as plt
 
 from SymPlot import *
 
@@ -32,7 +35,7 @@ def main():
 		-h	--help		False
 	"""
 	
-	me = "PhaseDiagram.main: "
+	me = me0+".main: "
 	t0 = time.time()
 
 	## Options
@@ -81,15 +84,9 @@ def main():
 		if verbose: print me+"Plotting all phase diagrams for Delta =",Delta,"\n"
 		plot_all(dirpath, Delta, showfig, verbose)
 		return
-	elif theory == 0 or theory == 1:
-		if verbose: print me+"Plotting simulated phase diagram for Delta =",Delta
-		phase_dat = phase_calc(dirpath, Delta, theory, verbose)
-	elif theory == 2:
-		if verbose: print me+"Plotting theoretical phase diagram for Delta =",Delta
-		phase_dat = phase_theo(Delta, verbose)
 	
 	## Plotting
-	phase_plot(dirpath, theory, plotent, nosave, verbose, Delta, *phase_dat)
+	phase_plot(dirpath, theory, plotent, nosave, verbose, Delta)
 	
 	if verbose: print me+"Execution",round(time.time()-t0,2),"seconds."
 	if showfig: plt.show()
@@ -141,6 +138,7 @@ def phase_calc(dirpath, Delta, th, vb):
 		
 		## Normalise time, ent and work
 		t /= N
+		# t *= k["B1C1"]
 		ent = calc_ent_norm(A1/(N/2.0))
 		work *= (0.0 if Delta == 1.0 else (np.log(Delta) / N))
 		
@@ -272,42 +270,46 @@ def phase_plot(dirpath, th, pe, nosave, vb, Delta):
 	
 	fig, ax = plt.subplots(1,1, figsize=fs["figsize"])
 	
-	###
-	plotfile = dirpath+"/PhaseDiagram2_"+plotkey+"_D"+str(int(Delta))+"."+fs["saveext"]
-	im = plt.scatter(DS[th/2], W_srt[th/2], marker="o", c=T[th/2], edgecolor="None", label="Simulation")
-	Seq = SSS_theo(Delta, {"A1B1":0.1,"B1C1":0.1,"C1A1":0.0,"B1A1":0.1})
-	plt.scatter(Seq,0.0, marker="o", c="k", s=40, label="Passive")
-	ax.set_xlim(-1,0)
-	ax.set_ylim(top=0.0)
-	ax.set_ylim(bottom=-14.0)
-	ax.set_xlabel(r"$\Delta S/N\ln2$")
-	ax.set_ylabel(r"$W^{\rm sort}/NT$")
-	cbar = fig.colorbar(im, ax=ax,aspect=50)
-	cbar.ax.tick_params(labelsize=fs["fsl"]-4)
-	cbar.locator = MaxNLocator(3);	cbar.update_ticks()
-	plt.subplots_adjust(right=1.0)
-	###
+	## Plot Wsort vs DS with colour according to tau
+	if 1:
+		plotfile = dirpath+"/PhaseDiagram2_"+plotkey+"_D"+str(int(Delta))+"."+fs["saveext"]
+		im = plt.scatter(DS[th/2], W_srt[th/2], marker="o", c=T[th/2], edgecolor="None", label="Simulation")
+		Seq = SSS_theo(Delta, {"A1B1":0.1,"B1C1":0.1,"C1A1":0.0,"B1A1":0.1})
+		plt.scatter(Seq,0.0, marker="o", c="k", s=40, label="Passive")
+		ax.set_xlim(-1,0)
+		ax.set_ylim(top=0.0)
+		ax.set_ylim(bottom=-14.0)
+		ax.set_xlabel(r"$\Delta S/N\ln2$")
+		ax.set_ylabel(r"$W^{\rm sort}/NT$")
+		cbar = fig.colorbar(im, ax=ax,aspect=50)
+		cbar.ax.tick_params(labelsize=fs["fsl"]-4)
+		cbar.locator = MaxNLocator(3);	cbar.update_ticks()
+		plt.subplots_adjust(right=1.0)
 	
-	# if th != 0:	plt.scatter(T[1], Wdot[1], marker="x", c=z[1], label="Theory")
-	# if th != 2: plt.scatter(T[0], Wdot[0], marker="o", c=z[0], edgecolor="None", label="Simulation")
-	
-	## PLOT PROPERTIES
-	
-#	ax.set_xlim(left=0.0)
-#	ax.set_ylim(top=0.0,bottom=Wdot[0].min())
-#	plt.colorbar(ax=ax)
-#	plt.clim(vmin=-1.0)
-#	if pe:	plt.clim(vmax=0.0)
-	
-#	if int(Delta)==10:
-#		ax.set_xlim(0.0,6e2)
-#		ax.set_ylim(-2e-2,0.0)
-#	elif int(Delta)==5:
-#		ax.set_xlim(0.0,9e2)
-#		ax.set_ylim(-1.7e-2,0.0)
+	## Plot Wdot vs tau with colour according to DS OR DS-W
+	else:
+		if th != 0:	plt.scatter(T[1], Wdot[1], marker="x", c=z[1], label="Theory")
+		if th != 2: plt.scatter(T[0], Wdot[0], marker="o", c=z[0], edgecolor="None", label="Simulation")
 		
-#	ax.set_xlabel(r"$\tau/N$")
-#	ax.set_ylabel(r"$\dot W^{\rm SS}/NT$")
+		# PLOT PROPERTIES
+		
+		ax.set_xlim(left=0.0)
+		ax.set_ylim(top=0.0,bottom=Wdot[0].min())
+		plt.colorbar(ax=ax)
+		plt.clim(vmin=-1.0)
+		if pe:	plt.clim(vmax=0.0)
+		
+		if int(Delta)==10:
+			ax.set_xlim(0.0,6e2)
+			ax.set_ylim(-2e-2,0.0)
+		elif int(Delta)==5:
+			ax.set_xlim(0.0,9e2)
+			ax.set_ylim(-1.7e-2,0.0)
+			
+		ax.set_xlabel(r"$\tau/N$")
+		ax.set_ylabel(r"$\dot W^{\rm SS}/NT$")
+	
+	
 	ax.xaxis.major.formatter.set_powerlimits((0,0)) 
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	ax.grid()
