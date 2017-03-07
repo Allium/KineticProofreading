@@ -2,6 +2,7 @@
  * @author Daniel Seeto
  * @version 3/27/16
  * 
+ // Arguments D, h/n, rates
  */
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -46,11 +47,11 @@ public class JHopfield {
 		
 		// ======================================Unprimed Quantities
 		int E1 = 1;
-		int A1 = 10000;
+		int A1 = 100000;
 		int B1 = 0;
 		int C1 = 0;
 		int E2 = 1;
-		int A2 = 10000;
+		int A2 = 100000;
 		int B2 = 0;
 		int C2 = 0;
 		
@@ -58,10 +59,10 @@ public class JHopfield {
 		int A20 = A2;
 
 		// ======================================Primed Quantities
-		int pA1 = 10000;
+		int pA1 = 100000;
 		int pB1 = 0;
 		int pC1 = 0;
-		int pA2 = 10000;
+		int pA2 = 100000;
 		int pB2 = 0;
 		int pC2 = 0;
 		
@@ -80,8 +81,7 @@ public class JHopfield {
 		double C1A2 = .005*delta1;
 		double A2C1 = .04;
 
-		
-
+	
 		if (args[2].equalsIgnoreCase("S")) {
 			A1B1 = .04;
 			B1A1 = .005;
@@ -118,6 +118,8 @@ public class JHopfield {
 
 		// Timesteps
 		double timeMax = 2000 * (A1 + A2 + pA1 + pA2);
+		// // Need to extend time for good sorter rates and notfield.
+		// if (args[1].equalsIgnoreCase("n")) {timeMax = timeMax*5 ;}
 
 		// ======================================Loop Counters
 		int t = 0;
@@ -184,7 +186,8 @@ public class JHopfield {
 
 		// =================================================================Generate
 		// datafile with header
-		String fileName = "Results/SymChannel/Phase/D"+ args[0]+"/Sym_"+filekey+"_"+args[0]+"_n"+args[7]+"_.txt";
+		String fileName = "Results/SymChannel/Phase/D"+args[0]+"_2/Sym_"+filekey+"_"+args[0]+"_n"+args[7]+"_.txt";
+		// String fileName = "Results/SymChannel/BadProof4/Sym_"+filekey+"_"+args[0]+"_.txt";
 		try {
 			PrintWriter outputStream = new PrintWriter(fileName);
 			outputStream.println(df.format(cal.getTime()));
