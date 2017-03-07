@@ -74,7 +74,7 @@ def filename_par(filename, searchstr):
 	finish = start + 1
 	while unicode(filename[start:].replace(".",""))[:finish-start].isnumeric():
 		finish += 1
-	return float(filename[start:finish])
+	return float(filename[start:finish-1])
 
 
 ## ====================================================================

@@ -4,6 +4,7 @@ import numpy as np
 from scipy.signal import fftconvolve
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import os, glob, optparse, time
 
 from Utils import fs, set_mplrc
@@ -137,7 +138,7 @@ def plot_delta(dirpath, ns, vb):
 	notlist = filelist[numfiles/2:]
 	
 	## Initialise arrays
-	Delta, N, S_fin, t_SS, W_srt, Wdot_SS, ERR, t_SS_th = np.zeros([8,numfiles])
+	Delta, N, S_fin, t_SS, W_srt, Wdot_SS, ERR, t_SS_th, Wsrt_th = np.zeros([9,numfiles])
 	
 	## Get data from all files
 	for i in range(numfiles):
@@ -156,9 +157,9 @@ def plot_delta(dirpath, ns, vb):
 		t, A1, A2, Ap1, Ap2, work, A12, A21, Ap12, Ap21 = data[[0,1,2,3,4,6,10,11,12,13]]
 		del data
 		
-		## Normalise work
+		## Normalise work. In files it is just counts.
 		if Delta[i] == 1: 	work *= 0.0
-		else:				work /= np.log(Delta[i]) * N[i]*np.log(2)
+		else:				work *= np.log(Delta[i])/N[i]
 		
 		## Normalise ent and find SS index
 		ent = calc_ent_norm(A1/(N[i]/2.0))
@@ -179,8 +180,8 @@ def plot_delta(dirpath, ns, vb):
 	
 		## Construct prediction arrays
 		t_SS_th[i] = SSt_theo(Delta[i],k)
-		
-		
+		Wsrt_th[i] = Wsort_theo(Delta[i],k)
+	
 	## ----------------------------------------------------
 	
 	## Separate into H and N
@@ -190,9 +191,10 @@ def plot_delta(dirpath, ns, vb):
 	t_SS = t_SS.reshape(newshape)
 	t_SS_th = t_SS_th.reshape(newshape)
 	W_srt = W_srt.reshape(newshape)
+	Wsrt_th = Wsrt_th.reshape(newshape)
 	Wdot_SS  = Wdot_SS.reshape(newshape)
 	ERR = ERR.reshape(newshape)
-	N = np.unique(N)	## Assume all Hop files have same N and all Not files have same N
+	N = [N[0],N[numfiles/2]]	## Assume all Hop files have same N and all Not files have same N
 	
 	## Sort by Delta
 	sortind = np.argsort(Delta)
@@ -203,10 +205,11 @@ def plot_delta(dirpath, ns, vb):
 		raise IOError(me+"Files not matching:\n"+filelist.tostring())
 	S_fin = S_fin[:,sortind[0]]
 	t_SS = t_SS[:,sortind[0]]
-	t_SS_th = t_SS_th[:,sortind[0]]
 	W_srt = W_srt[:,sortind[0]]
 	Wdot_SS = Wdot_SS[:,sortind[0]]
 	ERR = ERR[:,sortind[0]]
+	t_SS_th = t_SS_th[:,sortind[0]]
+	Wsrt_th = Wsrt_th[:,sortind[0]]
 
 	## ----------------------------------------------------
 	
@@ -219,10 +222,11 @@ def plot_delta(dirpath, ns, vb):
 	## Plotting
 	
 	fsl = fs["fsl"]
-	fs["saveext"] = "png"
+	fs["saveext"] = "jpg"
 	colour = ["b","r","m"]
 	label = ["Proofread","Equilibrium"]
 
+	"""
 	## SORTING ERROR RATE RATIO
 	
 	plt.figure("ERR"); ax = plt.gca()
@@ -245,7 +249,6 @@ def plot_delta(dirpath, ns, vb):
 		if vb: print me+"Plot saved to",plotfile
 
 	## SS ENTROPY
-	
 	plt.figure("SSS"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_1_SSS."+fs["saveext"]
 	for i in [0,1]:
@@ -259,7 +262,8 @@ def plot_delta(dirpath, ns, vb):
 	ax.set_xlabel("$\\Delta$")
 	ax.set_ylabel("$\Delta S_{\mathrm{SS}} / N\ln2$")
 	ax.grid()
-	plt.legend(loc="best", fontsize=fsl).get_frame().set_alpha(0.5)
+	ax.legend(loc="best", fontsize=fsl).get_frame().set_alpha(0.5)
+	plt.subplots_adjust(left=0.15)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -289,32 +293,34 @@ def plot_delta(dirpath, ns, vb):
 	plotfile = dirpath+"/DeltaPlot_3_tSS."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
-		ax.plot(Delta[i], t_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i,1:], N[i]*t_SS_th[i,1:], colour[i]+"--", label="Theory")
+		ax.plot(Delta[i], t_SS[i]/N[i]*k[i]["B1C1"], colour[i]+"o", label=label[i])
+		ax.plot(Delta[i,1:], t_SS_th[i,1:]*k[i]["B1C1"], colour[i]+"--", label="Theory")
 	ax.set_xlim(left=1.0)
-	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("$t_{\\mathrm{SS}}$")
+	ax.set_xlabel(r"$\Delta$")
+	ax.set_ylabel(r"$\tau\times bc/N$")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	ax.grid()
-	plt.legend(loc="best", fontsize=fsl)
+	ax.legend(loc="best", fontsize=fsl)
+	# plt.subplots_adjust(left=0.13)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
 
 	## TOTAL WORK TO SORT
-	
 	plt.figure("Wsort"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_4_Wsort."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
-		ax.plot(Delta[i,1:], W_srt[i,1:], colour[i]+"o", label=label[i])
+		ax.plot(Delta[i,:], W_srt[i,:], colour[i]+"o", label=label[i])
+		ax.plot(Delta[i,:], Wsrt_th[i,:], colour[i]+"--", label="Theory")
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
-	ax.set_ylim(top=0.0)
-	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("$W_{\mathrm{total}}$ for sorting")
-	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
+	ax.set_ylim(top=0.5)
+	ax.set_xlabel(r"$\Delta$")
+	ax.set_ylabel(r"$W^{\rm sort}/NT$")
+	ax.yaxis.major.formatter.set_powerlimits((1,1)) 
 	ax.grid()
-	plt.legend(loc="lower right", fontsize=fsl)
+	ax.legend(loc="best", fontsize=fsl).get_frame().set_alpha(0.5)
+	plt.subplots_adjust(left=0.13)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
@@ -326,35 +332,55 @@ def plot_delta(dirpath, ns, vb):
 	plt.subplot(111)
 	for i in [0,1]:
 		ax.plot(Delta[i], Wdot_SS[i], colour[i]+"o", label=label[i])
-		ax.plot(Delta[i,1:],-SSW_theo(Delta[i,1:],k[i])/(N[i]*np.log(2)), colour[i]+"--",label="Theory")
-	ax.set_ylim(top=0.0)
+		ax.plot(Delta[i,:],-SSW_theo(Delta[i,:],k[i])/(N[i]), colour[i]+"--",label="Theory")
+	# ax.set_ylim(top=0.0)
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
-	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("$\dot W_{\mathrm{SS}}$")
+	ax.set_xlabel(r"$\Delta$")
+	ax.set_ylabel(r"$\dot W^{\rm SS}/NT$")
 	ax.yaxis.major.formatter.set_powerlimits((0,0)) 
 	ax.grid()
-	plt.legend(loc="lower right", fontsize=fsl)
+	ax.legend(loc="best", fontsize=fsl)
+	plt.subplots_adjust(left=0.15)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
-	
+
 	## NET COST
 	
 	plt.figure("Net"); ax = plt.gca()
 	plotfile = dirpath+"/DeltaPlot_6_net."+fs["saveext"]
 	plt.subplot(111)
 	for i in [0,1]:
-		ax.plot(Delta[i], S_fin[i]-W_srt[i], colour[i]+"o", label=label[i])
+		ax.plot(Delta[i], S_fin[i]-W_srt[i]/np.log(2), colour[i]+"o", label=label[i])
 	ax.set_xlim(left=1.0,right=Delta[0,-1])
 	ax.set_ylim(bottom=-1.0)
-	ax.set_xlabel("$\\Delta$")
-	ax.set_ylabel("Net profit: $\\Delta S - W/T$")
+	ax.set_xlabel(r"$\Delta$")
+	ax.set_ylabel(r"$(\Delta S - W/T)/N\ln2$")
 	ax.grid()
-	plt.legend(loc="upper right", fontsize=fsl)
+	plt.legend(loc="center right", fontsize=fsl)
 	if not ns:
 		plt.savefig(plotfile)
 		if vb: print me+"Plot saved to",plotfile
+	"""
+
+	## Wsort VERSUS ENTROPY CHANGE
 	
+	plt.figure("Work vs entropy"); ax = plt.gca()
+	plotfile = dirpath+"/DeltaPlot_7_WvS."+fs["saveext"]
+	plt.subplot(111)
+	for i in [0]:
+		ax.plot(S_fin[i], W_srt[i], colour[i]+"o", label=label[i])
+	ax.set_xlim(left=-1.0,right=0.0)
+	# ax.set_ylim(top=0.0)
+	ax.set_xlabel(r"$\Delta S/N\ln2$")
+	ax.set_ylabel(r"$W^{\rm sort}/NT$")
+	ax.xaxis.set_major_locator(MaxNLocator(5))
+	ax.grid()
+	plt.legend(loc="best", fontsize=fsl)
+	if not ns:
+		plt.savefig(plotfile)
+		if vb: print me+"Plot saved to",plotfile
+		
 	##
 	
 	if vb: print me+"Execution",round(time.time()-t0,2),"seconds."
@@ -384,9 +410,9 @@ def flatline(y):
 
 ##=============================================================================
 
-def SSS_theo(D, k):
+def ASS_theo(D, k):
 	"""
-	Prediction for the SS entropy in equilibrium.
+	Calculate the SS concentration given parameters.
 	"""
 	a1b = k["A1B1"]
 	ba1 = k["B1A1"]
@@ -394,10 +420,17 @@ def SSS_theo(D, k):
 	cb  = k["B1C1"]
 	num = (ca1*cb + ba1*ca1 + ba1*cb) + ca1*ca1*D
 	den = (ba1*cb + ba1*ca1 + ca1*cb) + (2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
-	A1SS = num/den
+	return num/den
+
+##-----------------------------------------------------------------------------------------------
+def SSS_theo(D, k):
+	"""
+	Prediction for the SS entropy in equilibrium.
+	"""
+	A1SS = ASS_theo(D, k)
 	return - 1.0 - ( A1SS*np.log(A1SS) + (1-A1SS)*np.log(1-A1SS) ) / np.log(2)
 
-
+##-----------------------------------------------------------------------------------------------
 def SSW_theo(D, k):
 	"""
 	Prediction for the SS work RATE.
@@ -408,11 +441,13 @@ def SSW_theo(D, k):
 	cb  = k["B1C1"]
 	num = a1b*ca1*(ca1+2*cb) + a1b*ca1*ca1*D
 	den = a1b*ca1+ba1*ca1+2*a1b*cb+ba1*cb+ca1*cb + (a1b*ca1+2*ca1*ca1+ba1*cb+ca1*cb)*D + ba1*ca1*D*D
-	return num/den
+	return num/den *np.log(D)
 
-def SSt_theo(D, k):
+##-----------------------------------------------------------------------------------------------
+def SSt_theo_old(D, k):
 	"""
 	Predction for time to reach SS.
+	Must be multiplied by N.
 	"""
 	a1b = k["A1B1"]
 	ba1 = k["B1A1"]
@@ -454,6 +489,53 @@ def SSt_theo(D, k):
 	tau = num/den
 	##
 	return tau*np.log(20)
+	
+def SSt_theo(D, k):
+	"""
+	Predction for time to reach SS, using new method. 23/02/2017.
+	Valid for large N. Must be multiplied by N.
+	"""
+	a1b = k["A1B1"]
+	ba1 = k["B1A1"]
+	ba2 = k["C1A1"]
+	bc  = k["B1C1"]
+	a = a1b*(ba1*ba2+ba1*bc+ba2*bc+ba2*ba2*D)
+	b = a1b*(ba1*ba2+ba1*bc+ba2*bc+(2*ba2*ba2+ba1*ba2+ba1*bc+ba2*bc)*D+ba1*ba2*D*D)
+	g = (2*a1b*ba1+4*a1b*bc+2*a1b*ba2*D+ba1*ba2*D*D)
+	d = 2*a1b*(ba1-ba2)*(D-1)
+	ASS = ASS_theo(D,k)
+	# return d/b*(1-ASS) + (g*b+d*a)/(b*b)*np.log((1+b/a)/((1+b/a*ASS)))
+	return 2*(g*b+d*a)/(b*b)
+	
+##-----------------------------------------------------------------------------------------------
+def Wsort_theo(D, k):
+	"""
+	Calculate the total work to sort, assuming invertible evolution equation.
+	See notes 24/02/2017.
+	"""
+	a1b = k["A1B1"]
+	ba1 = k["B1A1"]
+	ba2 = k["C1A1"]
+	bc  = k["B1C1"]
+	##
+	ASS = ASS_theo(D,k)
+	tSS = SSt_theo(D,k)
+	##
+	eps = a1b*ba2*(1 + D)*(ba1 + 2*bc + ba2*D)
+	# zet = a1b*(ba1 - ba2)*ba2*(D-1)*(D+1)
+	zet = a1b*(ba1 + ba2)*ba2*(D-1)*(D+1)
+	eta = 2*a1b*(ba1 + 2*bc + ba2*D)
+	# the = 2*a1b*(ba1 - ba2)*(D-1)
+	the = 2*a1b*(ba1 + ba2)*(D-1)
+	##
+	eps += zet*ASS
+	eta += the*ASS
+	zet *= (0.5-ASS)
+	the *= (0.5-ASS)
+	##
+	# Wsort = tSS*(zet/the+(eps/eta-zet/the)*np.log((np.exp(1))+the/eta)/(1+the/eta))
+	Wsort = 0.5*ba2*(1+D)*tSS * np.log(D) 
+	return -Wsort *2/(D+1)
 
 ##=============================================================================
 
